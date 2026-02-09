@@ -4,8 +4,8 @@ Additional tests for Note domain model methods.
 Covers save(), add_to_notebook(), and get_context() variations.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -19,7 +19,9 @@ class TestNoteMethods:
     @pytest.mark.asyncio
     @patch("open_notebook.domain.notebook.submit_command")
     @patch("open_notebook.domain.base.repo_create")
-    async def test_save_submits_embed_command(self, mock_repo_create, mock_submit_command):
+    async def test_save_submits_embed_command(
+        self, mock_repo_create, mock_submit_command
+    ):
         """Test Note.save() submits embed_note command when content exists."""
         note = Note(title="Test Note", content="Some content")
         note.id = None
@@ -63,13 +65,9 @@ class TestNoteMethods:
     @patch("open_notebook.domain.notebook.repo_create")
     async def test_save_empty_content_no_embed(self, mock_repo_create):
         """Test Note.save() does not submit embed command when content is empty."""
-        # Empty content should be rejected by validator, but test the save logic
-        note = Note(title="Test Note", content="   ")  # Whitespace only
-        note.id = None
-
-        # This would fail validation, but if it gets through, test save logic
-        # Actually, validator rejects empty/whitespace, so this test may not be reachable
-        pass
+        # Empty content is validated at model construction time.
+        with pytest.raises(InvalidInputError):
+            Note(title="Test Note", content="   ")  # Whitespace only
 
     @pytest.mark.asyncio
     async def test_add_to_notebook_empty_id(self):

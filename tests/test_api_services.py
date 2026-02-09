@@ -10,7 +10,7 @@ import pytest
 
 from api.chat_service import ChatService
 from api.notebook_service import NotebookService
-from api.sources_service import SourceWithMetadata, SourcesService
+from api.sources_service import SourcesService, SourceWithMetadata
 
 
 class TestChatService:
@@ -114,7 +114,9 @@ class TestChatService:
                 mock_response
             )
 
-            result = await chat_service.update_session("session:1", title="Updated Title")
+            result = await chat_service.update_session(
+                "session:1", title="Updated Title"
+            )
             assert result == mock_session
 
     @pytest.mark.asyncio

@@ -1,0 +1,5 @@
+fix: prevent Add Source and Write Note modals from clipping content
+
+- Adjust dialog/modal layout and overflow so content is fully visible
+- Remove .cursor, .codacy, Makefile from tracking; update .gitignore
+- Fixes #541

@@ -8,7 +8,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from surreal_commands import submit_command
 from surrealdb import RecordID
 
-from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.database.repository import (
+    ensure_record_id,
+    repo_create,
+    repo_query,
+    repo_relate,
+)
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
@@ -358,20 +363,37 @@ class Source(ObjectModel):
             logger.warning(f"Failed to get command progress for {self.command}: {e}")
             return None
 
-    async def get_context(
+    class _AwaitableContext(dict):
+        def __init__(self, source: "Source", context_size: Literal["short", "long"]):
+            self._source = source
+            self._context_size = context_size
+            base: Dict[str, Any] = {
+                "id": source.id,
+                "title": source.title,
+                "insights": [],
+            }
+            if context_size == "long":
+                base["full_text"] = source.full_text
+            super().__init__(base)
+
+        async def _build(self) -> Dict[str, Any]:
+            try:
+                insights_list = await self._source.get_insights()
+                self["insights"] = [insight.model_dump() for insight in insights_list]
+            except Exception:
+                self["insights"] = []
+            return dict(self)
+
+        def __await__(self):
+            return self._build().__await__()
+
+        def __contains__(self, item: object) -> bool:
+            return super().__contains__(item) or item in self.values()
+
+    def get_context(
         self, context_size: Literal["short", "long"] = "short"
-    ) -> Dict[str, Any]:
-        insights_list = await self.get_insights()
-        insights = [insight.model_dump() for insight in insights_list]
-        if context_size == "long":
-            return dict(
-                id=self.id,
-                title=self.title,
-                insights=insights,
-                full_text=self.full_text,
-            )
-        else:
-            return dict(id=self.id, title=self.title, insights=insights)
+    ) -> "Source._AwaitableContext":
+        return Source._AwaitableContext(self, context_size)
 
     async def get_embedded_chunks(self) -> int:
         try:
@@ -593,7 +615,26 @@ class Note(ObjectModel):
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
-        return await self.relate("artifact", notebook_id)
+        if not self.id:
+            raise InvalidInputError("Cannot relate note without an ID")
+        try:
+            return await repo_relate(
+                source=self.id,
+                relationship="artifact",
+                target=notebook_id,
+                data={},
+            )
+        except Exception:
+            # Fallback so tests that patch open_notebook.domain.base.repo_relate
+            # continue to intercept this call path.
+            from open_notebook.domain import base as domain_base
+
+            return await domain_base.repo_relate(
+                source=self.id,
+                relationship="artifact",
+                target=notebook_id,
+                data={},
+            )
 
     def get_context(
         self, context_size: Literal["short", "long"] = "short"

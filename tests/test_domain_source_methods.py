@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from open_notebook.domain.notebook import Source, SourceInsight, SourceEmbedding
+from open_notebook.domain.notebook import Source, SourceEmbedding, SourceInsight
 from open_notebook.exceptions import DatabaseOperationError
 
 
@@ -61,7 +61,9 @@ class TestSourceMethods:
 
         mock_status = MagicMock()
         mock_status.status = "running"
-        mock_status.result = {"execution_metadata": {"started_at": "2024-01-01T00:00:00"}}
+        mock_status.result = {
+            "execution_metadata": {"started_at": "2024-01-01T00:00:00"}
+        }
         mock_get_command_status.return_value = mock_status
 
         progress = await source.get_processing_progress()
@@ -153,9 +155,7 @@ class TestSourceInsightMethods:
     @pytest.mark.asyncio
     @patch("open_notebook.domain.notebook.Note")
     @patch("open_notebook.domain.notebook.repo_query")
-    async def test_save_as_note_with_notebook(
-        self, mock_repo_query, mock_note_class
-    ):
+    async def test_save_as_note_with_notebook(self, mock_repo_query, mock_note_class):
         """Test SourceInsight.save_as_note() creates note and links to notebook."""
         insight = SourceInsight(insight_type="summary", content="Summary content")
         insight.id = "insight:123"

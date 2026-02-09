@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
-from open_notebook.domain.notebook import Note
+from open_notebook.domain.notebook import Note, Notebook
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
@@ -18,8 +18,6 @@ async def get_notes(
     try:
         if notebook_id:
             # Get notes for a specific notebook
-            from open_notebook.domain.notebook import Notebook
-
             notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")

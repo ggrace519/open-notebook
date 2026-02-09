@@ -35,7 +35,9 @@ class TestCommandsRouter:
     @patch("api.routers.commands.CommandService")
     async def test_submit_command_job_error(self, mock_service, client):
         """Test POST /api/commands/jobs handles errors."""
-        mock_service.submit_command_job = AsyncMock(side_effect=Exception("Command failed"))
+        mock_service.submit_command_job = AsyncMock(
+            side_effect=Exception("Command failed")
+        )
 
         response = client.post(
             "/api/commands/jobs",
@@ -116,13 +118,13 @@ class TestCommandService:
 
     @pytest.mark.asyncio
     @patch("api.command_service.submit_command")
-    @patch("builtins.__import__")
-    async def test_submit_command_job_import_error(self, mock_import, mock_submit_command):
+    async def test_submit_command_job_import_error(self, mock_submit_command):
         """Test CommandService.submit_command_job handles import errors."""
         from api.command_service import CommandService
 
         # Mock import failure for commands.podcast_commands
         original_import = __import__
+
         def failing_import(name, *args, **kwargs):
             if name == "commands.podcast_commands":
                 raise ImportError("Module not found")

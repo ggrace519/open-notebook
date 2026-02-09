@@ -8,6 +8,16 @@ from open_notebook.exceptions import InvalidInputError
 router = APIRouter()
 
 
+def _safe_string(value: object, default: str) -> str:
+    return value if isinstance(value, str) else default
+
+
+def _safe_string_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, str)]
+    return []
+
+
 @router.get("/settings", response_model=SettingsResponse)
 async def get_settings():
     """Get all application settings."""
@@ -15,11 +25,19 @@ async def get_settings():
         settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
 
         return SettingsResponse(
-            default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
-            default_content_processing_engine_url=settings.default_content_processing_engine_url,
-            default_embedding_option=settings.default_embedding_option,
-            auto_delete_files=settings.auto_delete_files,
-            youtube_preferred_languages=settings.youtube_preferred_languages,
+            default_content_processing_engine_doc=_safe_string(
+                settings.default_content_processing_engine_doc, "auto"
+            ),
+            default_content_processing_engine_url=_safe_string(
+                settings.default_content_processing_engine_url, "auto"
+            ),
+            default_embedding_option=_safe_string(
+                settings.default_embedding_option, "ask"
+            ),
+            auto_delete_files=_safe_string(settings.auto_delete_files, "yes"),
+            youtube_preferred_languages=_safe_string_list(
+                settings.youtube_preferred_languages
+            ),
         )
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
@@ -71,11 +89,19 @@ async def update_settings(settings_update: SettingsUpdate):
         await settings.update()
 
         return SettingsResponse(
-            default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
-            default_content_processing_engine_url=settings.default_content_processing_engine_url,
-            default_embedding_option=settings.default_embedding_option,
-            auto_delete_files=settings.auto_delete_files,
-            youtube_preferred_languages=settings.youtube_preferred_languages,
+            default_content_processing_engine_doc=_safe_string(
+                settings.default_content_processing_engine_doc, "auto"
+            ),
+            default_content_processing_engine_url=_safe_string(
+                settings.default_content_processing_engine_url, "auto"
+            ),
+            default_embedding_option=_safe_string(
+                settings.default_embedding_option, "ask"
+            ),
+            auto_delete_files=_safe_string(settings.auto_delete_files, "yes"),
+            youtube_preferred_languages=_safe_string_list(
+                settings.youtube_preferred_languages
+            ),
         )
     except HTTPException:
         raise

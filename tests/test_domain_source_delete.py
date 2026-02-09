@@ -4,10 +4,10 @@ Tests for Source.delete() method.
 Covers file cleanup, embedding deletion, and insight deletion.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -22,7 +22,9 @@ class TestSourceDelete:
     @patch("open_notebook.domain.notebook.repo_query")
     @patch("open_notebook.domain.base.repo_delete")
     @patch("open_notebook.domain.notebook.os.unlink")
-    async def test_delete_removes_file(self, mock_unlink, mock_repo_delete, mock_repo_query):
+    async def test_delete_removes_file(
+        self, mock_unlink, mock_repo_delete, mock_repo_query
+    ):
         """Test Source.delete() removes associated file."""
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             tmp_path = tmp_file.name
@@ -69,7 +71,9 @@ class TestSourceDelete:
     @patch("open_notebook.domain.notebook.repo_query")
     @patch("open_notebook.domain.base.repo_delete")
     @patch("open_notebook.domain.notebook.os.unlink")
-    async def test_delete_handles_file_error(self, mock_unlink, mock_repo_delete, mock_repo_query):
+    async def test_delete_handles_file_error(
+        self, mock_unlink, mock_repo_delete, mock_repo_query
+    ):
         """Test Source.delete() continues if file deletion fails."""
         source = Source(
             title="Test Source",
@@ -108,13 +112,17 @@ class TestSourceDelete:
         assert result is True
 
         # Verify both DELETE queries were called
-        delete_calls = [call for call in mock_repo_query.call_args_list if "DELETE" in str(call)]
+        delete_calls = [
+            call for call in mock_repo_query.call_args_list if "DELETE" in str(call)
+        ]
         assert len(delete_calls) >= 2  # embeddings and insights
 
     @pytest.mark.asyncio
     @patch("open_notebook.domain.notebook.repo_query")
     @patch("open_notebook.domain.base.repo_delete")
-    async def test_delete_handles_embedding_error(self, mock_repo_delete, mock_repo_query):
+    async def test_delete_handles_embedding_error(
+        self, mock_repo_delete, mock_repo_query
+    ):
         """Test Source.delete() continues if embedding deletion fails."""
         source = Source(title="Test", topics=[])
         source.id = "source:123"

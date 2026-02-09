@@ -4,15 +4,19 @@ Edge case tests for domain models to increase coverage.
 Covers error paths, validation edge cases, and boundary conditions.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
 
 from open_notebook.domain.base import ObjectModel, RecordModel
-from open_notebook.domain.notebook import Notebook, Note, Source
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError, NotFoundError
+from open_notebook.domain.notebook import Note, Notebook, Source
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
+)
 
 
 class TestObjectModelEdgeCases:
@@ -92,7 +96,9 @@ class TestObjectModelEdgeCases:
         notebook = Notebook(name="Test", description="")
         notebook.id = None
 
-        with pytest.raises(InvalidInputError, match="Relationship and target ID must be provided"):
+        with pytest.raises(
+            InvalidInputError, match="Relationship and target ID must be provided"
+        ):
             await notebook.relate("reference", "")
 
     @pytest.mark.asyncio
@@ -150,7 +156,12 @@ class TestObjectModelEdgeCases:
         mock_repo_query.return_value = [
             {"id": "notebook:1", "name": "Valid", "description": "", "archived": False},
             {"id": "notebook:2", "invalid": "data"},  # Missing required fields
-            {"id": "notebook:3", "name": "Also Valid", "description": "", "archived": False},
+            {
+                "id": "notebook:3",
+                "name": "Also Valid",
+                "description": "",
+                "archived": False,
+            },
         ]
 
         notebooks = await Notebook.get_all()

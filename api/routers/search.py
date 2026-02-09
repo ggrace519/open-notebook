@@ -1,4 +1,5 @@
 import json
+import inspect
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException
@@ -50,6 +51,8 @@ async def search_knowledge_base(search_request: SearchRequest):
 
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except DatabaseOperationError as e:
         logger.error(f"Database error during search: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -65,7 +68,7 @@ async def stream_ask_response(
     try:
         final_answer = None
 
-        async for chunk in ask_graph.astream(
+        stream = ask_graph.astream(
             input=dict(question=question),  # type: ignore[arg-type]
             config=dict(
                 configurable=dict(
@@ -75,7 +78,11 @@ async def stream_ask_response(
                 )
             ),
             stream_mode="updates",
-        ):
+        )
+        if inspect.isawaitable(stream):
+            stream = await stream
+
+        async for chunk in stream:
             if "agent" in chunk:
                 strategy_data = {
                     "type": "strategy",
@@ -188,7 +195,7 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
 
         # Run the ask graph and get final result
         final_answer = None
-        async for chunk in ask_graph.astream(
+        stream = ask_graph.astream(
             input=dict(question=ask_request.question),  # type: ignore[arg-type]
             config=dict(
                 configurable=dict(
@@ -198,7 +205,11 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
                 )
             ),
             stream_mode="updates",
-        ):
+        )
+        if inspect.isawaitable(stream):
+            stream = await stream
+
+        async for chunk in stream:
             if "write_final_answer" in chunk:
                 final_answer = chunk["write_final_answer"]["final_answer"]
 

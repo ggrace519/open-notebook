@@ -15,7 +15,6 @@ from open_notebook.utils.chunking import (
     detect_content_type_from_heuristics,
 )
 
-
 # ============================================================================
 # TEST SUITE 1: Content Type Detection from Extension
 # ============================================================================
@@ -29,14 +28,21 @@ class TestDetectContentTypeFromExtension:
         assert detect_content_type_from_extension("file.html") == ContentType.HTML
         assert detect_content_type_from_extension("file.htm") == ContentType.HTML
         assert detect_content_type_from_extension("file.xhtml") == ContentType.HTML
-        assert detect_content_type_from_extension("/path/to/file.HTML") == ContentType.HTML
+        assert (
+            detect_content_type_from_extension("/path/to/file.HTML") == ContentType.HTML
+        )
 
     def test_markdown_extensions(self):
         """Test Markdown file extensions."""
         assert detect_content_type_from_extension("file.md") == ContentType.MARKDOWN
-        assert detect_content_type_from_extension("file.markdown") == ContentType.MARKDOWN
+        assert (
+            detect_content_type_from_extension("file.markdown") == ContentType.MARKDOWN
+        )
         assert detect_content_type_from_extension("file.mdown") == ContentType.MARKDOWN
-        assert detect_content_type_from_extension("/path/to/README.MD") == ContentType.MARKDOWN
+        assert (
+            detect_content_type_from_extension("/path/to/README.MD")
+            == ContentType.MARKDOWN
+        )
 
     def test_plain_text_extensions(self):
         """Test plain text file extensions."""

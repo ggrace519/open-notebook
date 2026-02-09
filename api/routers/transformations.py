@@ -20,6 +20,14 @@ from open_notebook.graphs.transformation import graph as transformation_graph
 router = APIRouter()
 
 
+def _safe_str(value: object, default: str = "") -> str:
+    return value if isinstance(value, str) else default
+
+
+def _safe_bool(value: object, default: bool = False) -> bool:
+    return value if isinstance(value, bool) else default
+
+
 @router.get("/transformations", response_model=List[TransformationResponse])
 async def get_transformations():
     """Get all transformations."""
@@ -29,11 +37,11 @@ async def get_transformations():
         return [
             TransformationResponse(
                 id=transformation.id or "",
-                name=transformation.name,
-                title=transformation.title,
-                description=transformation.description,
-                prompt=transformation.prompt,
-                apply_default=transformation.apply_default,
+                name=_safe_str(transformation.name),
+                title=_safe_str(transformation.title),
+                description=_safe_str(transformation.description),
+                prompt=_safe_str(transformation.prompt),
+                apply_default=_safe_bool(transformation.apply_default),
                 created=str(transformation.created),
                 updated=str(transformation.updated),
             )
@@ -61,11 +69,11 @@ async def create_transformation(transformation_data: TransformationCreate):
 
         return TransformationResponse(
             id=new_transformation.id or "",
-            name=new_transformation.name,
-            title=new_transformation.title,
-            description=new_transformation.description,
-            prompt=new_transformation.prompt,
-            apply_default=new_transformation.apply_default,
+            name=_safe_str(new_transformation.name),
+            title=_safe_str(new_transformation.title),
+            description=_safe_str(new_transformation.description),
+            prompt=_safe_str(new_transformation.prompt),
+            apply_default=_safe_bool(new_transformation.apply_default),
             created=str(new_transformation.created),
             updated=str(new_transformation.updated),
         )
@@ -166,11 +174,11 @@ async def get_transformation(transformation_id: str):
 
         return TransformationResponse(
             id=transformation.id or "",
-            name=transformation.name,
-            title=transformation.title,
-            description=transformation.description,
-            prompt=transformation.prompt,
-            apply_default=transformation.apply_default,
+            name=_safe_str(transformation.name),
+            title=_safe_str(transformation.title),
+            description=_safe_str(transformation.description),
+            prompt=_safe_str(transformation.prompt),
+            apply_default=_safe_bool(transformation.apply_default),
             created=str(transformation.created),
             updated=str(transformation.updated),
         )
@@ -211,11 +219,11 @@ async def update_transformation(
 
         return TransformationResponse(
             id=transformation.id or "",
-            name=transformation.name,
-            title=transformation.title,
-            description=transformation.description,
-            prompt=transformation.prompt,
-            apply_default=transformation.apply_default,
+            name=_safe_str(transformation.name),
+            title=_safe_str(transformation.title),
+            description=_safe_str(transformation.description),
+            prompt=_safe_str(transformation.prompt),
+            apply_default=_safe_bool(transformation.apply_default),
             created=str(transformation.created),
             updated=str(transformation.updated),
         )

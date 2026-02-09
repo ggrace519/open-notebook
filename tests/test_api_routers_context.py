@@ -18,9 +18,19 @@ class TestContextRouter:
         mock_notebook.id = "notebook:123"
 
         mock_source = MagicMock()
-        mock_source.get_context = AsyncMock(return_value="Source context")
+        mock_source.id = "source:1"
+        mock_source.get_context = AsyncMock(
+            return_value={"id": "source:1", "title": "Test Source", "insights": []}
+        )
         mock_note = MagicMock()
-        mock_note.get_context = AsyncMock(return_value="Note context")
+        mock_note.id = "note:1"
+        mock_note.get_context = MagicMock(
+            return_value={
+                "id": "note:1",
+                "title": "Test Note",
+                "content": "Note content",
+            }
+        )
 
         mock_notebook.get_sources = AsyncMock(return_value=[mock_source])
         mock_notebook.get_notes = AsyncMock(return_value=[mock_note])
@@ -48,11 +58,26 @@ class TestContextRouter:
         mock_notebook.id = "notebook:123"
 
         mock_source = MagicMock()
-        mock_source.get_context = AsyncMock(return_value="Full source context")
+        mock_source.id = "source:1"
+        mock_source.get_context = AsyncMock(
+            return_value={
+                "id": "source:1",
+                "title": "Test Source",
+                "insights": [],
+                "full_text": "Full text",
+            }
+        )
         mock_source_class.get = AsyncMock(return_value=mock_source)
 
         mock_note = MagicMock()
-        mock_note.get_context = AsyncMock(return_value="Full note context")
+        mock_note.id = "note:1"
+        mock_note.get_context = MagicMock(
+            return_value={
+                "id": "note:1",
+                "title": "Test Note",
+                "content": "Full note content",
+            }
+        )
         mock_note_class.get = AsyncMock(return_value=mock_note)
 
         mock_notebook_class.get = AsyncMock(return_value=mock_notebook)
@@ -64,7 +89,7 @@ class TestContextRouter:
                 "context_config": {
                     "sources": {"source:1": "full content"},
                     "notes": {"note:1": "full content"},
-                }
+                },
             },
         )
         assert response.status_code == 200
@@ -106,7 +131,7 @@ class TestContextRouter:
                 "notebook_id": "notebook:123",
                 "context_config": {
                     "sources": {"source:999": "full content"},
-                }
+                },
             },
         )
         # Should handle gracefully and continue

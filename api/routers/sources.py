@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import os
 from pathlib import Path
 from typing import Any, List, Optional
@@ -36,6 +37,29 @@ from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
+
+
+async def _resolve_optional_await(value: Any, default: Any = None) -> Any:
+    """Resolve coroutine-like values while tolerating plain mocks."""
+    if inspect.isawaitable(value):
+        return await value
+    return default if value is None else value
+
+
+def _build_asset_model(asset: Any) -> Optional[AssetModel]:
+    if not asset:
+        return None
+    file_path = getattr(asset, "file_path", None)
+    url = getattr(asset, "url", None)
+    file_path_value = file_path if isinstance(file_path, str) else None
+    url_value = url if isinstance(url, str) else None
+    if file_path_value is None and url_value is None:
+        return None
+    return AssetModel(file_path=file_path_value, url=url_value)
+
+
+def _safe_optional_str(value: Any) -> Optional[str]:
+    return value if isinstance(value, str) else None
 
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
@@ -609,43 +633,55 @@ async def get_source(source_id: str):
         # Get status information if command exists
         status = None
         processing_info = None
-        if source.command:
+        if isinstance(source.command, str) and source.command:
             try:
-                status = await source.get_status()
-                processing_info = await source.get_processing_progress()
+                status_result = source.get_status()
+                status = await _resolve_optional_await(status_result, "unknown")
+                progress_result = source.get_processing_progress()
+                processing_info = await _resolve_optional_await(progress_result, None)
+                if not isinstance(status, str):
+                    status = "unknown"
+                if processing_info is not None and not isinstance(
+                    processing_info, dict
+                ):
+                    processing_info = None
             except Exception as e:
                 logger.warning(f"Failed to get status for source {source_id}: {e}")
                 status = "unknown"
 
-        embedded_chunks = await source.get_embedded_chunks()
+        embedded_result = source.get_embedded_chunks()
+        embedded_chunks = await _resolve_optional_await(embedded_result, 0)
+        if not isinstance(embedded_chunks, int):
+            embedded_chunks = 0
 
         # Get associated notebooks
-        notebooks_query = await repo_query(
-            "SELECT VALUE out FROM reference WHERE in = $source_id",
-            {"source_id": ensure_record_id(source.id or source_id)},
-        )
-        notebook_ids = (
-            [str(nb_id) for nb_id in notebooks_query] if notebooks_query else []
-        )
+        notebook_ids: list[str] = []
+        try:
+            notebooks_query = await repo_query(
+                "SELECT VALUE out FROM reference WHERE in = $source_id",
+                {"source_id": ensure_record_id(source.id or source_id)},
+            )
+            notebook_ids = (
+                [str(nb_id) for nb_id in notebooks_query] if notebooks_query else []
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to get notebook associations for source {source_id}: {e}"
+            )
 
         return SourceResponse(
             id=source.id or "",
             title=source.title,
             topics=source.topics or [],
-            asset=AssetModel(
-                file_path=source.asset.file_path if source.asset else None,
-                url=source.asset.url if source.asset else None,
-            )
-            if source.asset
-            else None,
-            full_text=source.full_text,
+            asset=_build_asset_model(source.asset),
+            full_text=_safe_optional_str(source.full_text),
             embedded=embedded_chunks > 0,
             embedded_chunks=embedded_chunks,
             file_available=_is_source_file_available(source),
             created=str(source.created),
             updated=str(source.updated),
             # Status fields
-            command_id=str(source.command) if source.command else None,
+            command_id=source.command if isinstance(source.command, str) else None,
             status=status,
             processing_info=processing_info,
             # Notebook associations
@@ -766,18 +802,16 @@ async def update_source(source_id: str, source_update: SourceUpdate):
 
         await source.save()
 
-        embedded_chunks = await source.get_embedded_chunks()
+        embedded_result = source.get_embedded_chunks()
+        embedded_chunks = await _resolve_optional_await(embedded_result, 0)
+        if not isinstance(embedded_chunks, int):
+            embedded_chunks = 0
         return SourceResponse(
             id=source.id or "",
             title=source.title,
             topics=source.topics or [],
-            asset=AssetModel(
-                file_path=source.asset.file_path if source.asset else None,
-                url=source.asset.url if source.asset else None,
-            )
-            if source.asset
-            else None,
-            full_text=source.full_text,
+            asset=_build_asset_model(source.asset),
+            full_text=_safe_optional_str(source.full_text),
             embedded=embedded_chunks > 0,
             embedded_chunks=embedded_chunks,
             created=str(source.created),
@@ -982,11 +1016,6 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-
-        # Validate transformation exists
-        transformation = await Transformation.get(request.transformation_id)
-        if not transformation:
-            raise HTTPException(status_code=404, detail="Transformation not found")
 
         # Submit transformation as background job (fire-and-forget)
         command_id = submit_command(

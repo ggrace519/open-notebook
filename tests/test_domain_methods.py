@@ -8,9 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from open_notebook.domain.base import ObjectModel, RecordModel
-from open_notebook.domain.notebook import Notebook, Note, Source
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError, NotFoundError
+from open_notebook.domain.base import ObjectModel
+from open_notebook.domain.notebook import Note, Notebook, Source
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
+)
 
 
 class TestNotebookMethods:
@@ -166,7 +170,7 @@ class TestNotebookMethods:
         # Mock note for get_notes()
         mock_note = MagicMock()
         mock_note.delete = AsyncMock()
-        
+
         # Mock source for exclusive source deletion
         mock_source = MagicMock()
         mock_source.delete = AsyncMock()
@@ -185,7 +189,7 @@ class TestNotebookMethods:
             return []
 
         mock_repo_query.side_effect = query_side_effect
-        
+
         # Mock get_notes to return our mock note
         notebook.get_notes = AsyncMock(return_value=[mock_note])
         mock_repo_delete.return_value = True
@@ -201,7 +205,9 @@ class TestNotebookMethods:
         notebook = Notebook(name="Test", description="")
         notebook.id = None
 
-        with pytest.raises(InvalidInputError, match="Cannot delete notebook without an ID"):
+        with pytest.raises(
+            InvalidInputError, match="Cannot delete notebook without an ID"
+        ):
             await notebook.delete()
 
 
@@ -213,8 +219,18 @@ class TestObjectModelMethods:
     async def test_get_all_with_order_by(self, mock_repo_query):
         """Test ObjectModel.get_all() with order_by parameter."""
         mock_repo_query.return_value = [
-            {"id": "notebook:1", "name": "Notebook 1", "description": "", "archived": False},
-            {"id": "notebook:2", "name": "Notebook 2", "description": "", "archived": False},
+            {
+                "id": "notebook:1",
+                "name": "Notebook 1",
+                "description": "",
+                "archived": False,
+            },
+            {
+                "id": "notebook:2",
+                "name": "Notebook 2",
+                "description": "",
+                "archived": False,
+            },
         ]
 
         notebooks = await Notebook.get_all(order_by="name asc")
@@ -227,7 +243,12 @@ class TestObjectModelMethods:
     async def test_get_all_without_order_by(self, mock_repo_query):
         """Test ObjectModel.get_all() without order_by."""
         mock_repo_query.return_value = [
-            {"id": "notebook:1", "name": "Notebook 1", "description": "", "archived": False}
+            {
+                "id": "notebook:1",
+                "name": "Notebook 1",
+                "description": "",
+                "archived": False,
+            }
         ]
 
         notebooks = await Notebook.get_all()
@@ -237,7 +258,9 @@ class TestObjectModelMethods:
     @pytest.mark.asyncio
     async def test_get_all_from_base_class_raises(self):
         """Test ObjectModel.get_all() raises when called from base class."""
-        with pytest.raises(InvalidInputError, match="must be called from a specific model class"):
+        with pytest.raises(
+            InvalidInputError, match="must be called from a specific model class"
+        ):
             await ObjectModel.get_all()
 
     @pytest.mark.asyncio
@@ -245,7 +268,12 @@ class TestObjectModelMethods:
     async def test_get_by_id_success(self, mock_repo_query):
         """Test ObjectModel.get() retrieves object by ID."""
         mock_repo_query.return_value = [
-            {"id": "notebook:123", "name": "Test Notebook", "description": "", "archived": False}
+            {
+                "id": "notebook:123",
+                "name": "Test Notebook",
+                "description": "",
+                "archived": False,
+            }
         ]
 
         notebook = await Notebook.get("notebook:123")
@@ -329,7 +357,10 @@ class TestObjectModelMethods:
         mock_repo_delete.return_value = True
 
         result = await notebook.delete()
-        assert result is True
+        assert isinstance(result, dict)
+        assert "deleted_notes" in result
+        assert "deleted_sources" in result
+        assert "unlinked_sources" in result
         mock_repo_delete.assert_called_once()
 
     @pytest.mark.asyncio
@@ -407,7 +438,9 @@ class TestSourceMethods:
     @patch("open_notebook.domain.notebook.repo_query")
     async def test_get_context_full(self, mock_repo_query):
         """Test Source.get_context() with context_size='long'."""
-        source = Source(title="Test Source", topics=["topic1"], full_text="Full text content")
+        source = Source(
+            title="Test Source", topics=["topic1"], full_text="Full text content"
+        )
         source.id = "source:123"
         mock_repo_query.return_value = []  # No insights
         context = await source.get_context(context_size="long")

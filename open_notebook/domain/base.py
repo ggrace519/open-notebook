@@ -29,6 +29,7 @@ T = TypeVar("T", bound="ObjectModel")
 
 
 class ObjectModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
     id: Optional[str] = None
     table_name: ClassVar[str] = ""
     nullable_fields: ClassVar[set[str]] = set()  # Fields that can be saved as None
@@ -61,6 +62,8 @@ class ObjectModel(BaseModel):
                     logger.critical(f"Error creating object: {str(e)}")
 
             return objects
+        except InvalidInputError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching all {cls.table_name}: {str(e)}")
             logger.exception(e)
@@ -119,7 +122,20 @@ class ObjectModel(BaseModel):
         command after calling super().save().
         """
         try:
-            self.model_validate(self.model_dump(), strict=True)
+            try:
+                self.model_validate(self.model_dump(), strict=True)
+            except InvalidInputError as e:
+                raise ValidationError.from_exception_data(
+                    self.__class__.__name__,
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("__root__",),
+                            "input": self.model_dump(),
+                            "ctx": {"error": str(e)},
+                        }
+                    ],
+                ) from e
             data = self._prepare_save_data()
             data["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -291,7 +307,7 @@ class RecordModel(BaseModel):
         # Get all non-ClassVar fields and their values
         data = {
             field_name: getattr(self, field_name)
-            for field_name, field_info in self.model_fields.items()
+            for field_name, field_info in self.__class__.model_fields.items()
             if not str(field_info.annotation).startswith("typing.ClassVar")
         }
 
