@@ -200,4 +200,9 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Hide dialog close (X) button – we never render it; rule covers stale bundles / Radix Close */
+  [data-slot="dialog-content"] > button:has(.lucide-x) {
+    display: none !important;
+  }
 }

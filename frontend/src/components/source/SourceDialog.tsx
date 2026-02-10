@@ -40,12 +40,19 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden p-0">
+      <DialogContent
+        className="sm:max-w-3xl w-full overflow-hidden p-0 flex flex-col"
+        style={{
+          height: '80vh',
+          minHeight: 600,
+          maxHeight: '90vh',
+        }}
+      >
         {/* Accessibility title (hidden visually but read by screen readers) */}
         <DialogTitle className="sr-only">{t.sources.detailsTitle}</DialogTitle>
 
-        {/* Source detail content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        {/* Same layout as NoteEditorDialog: scrollable body */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
           <SourceDetailContent
             sourceId={sourceIdWithPrefix}
             showChatButton={true}

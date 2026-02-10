@@ -458,7 +458,7 @@ export function AddSourceDialog({
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[500px]" showCloseButton={true}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
               {batchProgress ? t.sources.processingFiles : t.sources.statusProcessing}

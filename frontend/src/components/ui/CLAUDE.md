@@ -26,7 +26,7 @@ Radix UI-based accessible component library with CVA styling, composed building 
 
 - `@radix-ui/*`: Unstyled accessible primitives (dialog, select, dropdown-menu, etc.)
 - `class-variance-authority`: CVA for variant patterns
-- `lucide-react`: Icon library (XIcon in dialog close button)
+- `lucide-react`: Icon library (used by consumers; dialog has no close button)
 - `@/lib/utils`: `cn()` utility for class merging
 
 ## How to Add New Components
