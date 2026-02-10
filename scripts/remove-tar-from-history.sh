@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Remove open-notebook-image.tar from branch history so push succeeds (file > 100MB).
-# Requires: git-filter-repo (pip install git-filter-repo). Run in WSL from repo root:
+# Requires: git-filter-repo (pip install git-filter-repo). Run in WSL or Git Bash from repo root:
 #   bash scripts/remove-tar-from-history.sh
+# Or pass your branch name:
+#   bash scripts/remove-tar-from-history.sh "fix/-Bug]--Bug-in-fetching-response-in-ask-&-search-#551"
 
 set -e
-BRANCH="${1:-fix/additional-modal-display-issues}"
+# Default: current branch (use $1 if provided)
+BRANCH="${1:-$(git branch --show-current)}"
 
 REMOTE_URL=$(git config --get remote.origin.url 2>/dev/null || true)
 

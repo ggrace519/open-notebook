@@ -153,3 +153,5 @@ archive/
 # Optional: local PR/submission helpers (uncomment to keep untracked)
 SUBMISSION_GUIDE_ISSUE_541.md
 .github/PULL_REQUEST_TEMPLATE_filled_541.md
+scripts/remove-tar-from-history.sh
+scripts/remove-tar-from-history.ps1
