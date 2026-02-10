@@ -171,6 +171,7 @@ export const ptBR = {
     answerModelNotFound: "Modelo de resposta não encontrado",
     finalAnswerModelNotFound: "Modelo de resposta final não encontrado",
     noAnswerGenerated: "Nenhuma resposta pôde ser gerada",
+    askConnectionOrTimeout: "Conexão perdida ou tempo esgotado. A pergunta pode levar vários minutos—tente novamente ou verifique sua rede.",
     genericError: "Ocorreu um erro inesperado",
   },
   connectionErrors: {
@@ -525,6 +526,7 @@ export const ptBR = {
     selectFinalPlaceholder: "Selecione o modelo de resposta final",
     saveChanges: "Salvar Alterações",
     processingQuestion: "Processando sua pergunta...",
+    askMayTakeLong: "Isso pode levar alguns minutos.",
   },
   podcasts: {
     generateEpisode: "Gerar Episódio de Podcast",

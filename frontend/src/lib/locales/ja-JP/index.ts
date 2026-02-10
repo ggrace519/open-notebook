@@ -171,6 +171,7 @@ export const jaJP = {
     answerModelNotFound: "回答モデルが見つかりません",
     finalAnswerModelNotFound: "最終回答モデルが見つかりません",
     noAnswerGenerated: "回答を生成できませんでした",
+    askConnectionOrTimeout: "接続が切れたか、リクエストがタイムアウトしました。質問には数分かかることがあります。もう一度お試しいただくか、ネットワークをご確認ください。",
     genericError: "予期しないエラーが発生しました",
   },
   connectionErrors: {
@@ -525,6 +526,7 @@ export const jaJP = {
     selectFinalPlaceholder: "最終回答モデルを選択",
     saveChanges: "変更を保存",
     processingQuestion: "質問を処理中...",
+    askMayTakeLong: "数分かかることがあります。",
   },
   podcasts: {
     generateEpisode: "ポッドキャストエピソードを生成",

@@ -171,6 +171,7 @@ export const ruRU = {
     answerModelNotFound: "Модель ответов не найдена",
     finalAnswerModelNotFound: "Модель итогового ответа не найдена",
     noAnswerGenerated: "Не удалось сгенерировать ответ",
+    askConnectionOrTimeout: "Соединение потеряно или истекло время запроса. Ответ может занять несколько минут — попробуйте снова или проверьте сеть.",
     genericError: "Произошла непредвиденная ошибка",
   },
   connectionErrors: {
@@ -525,6 +526,7 @@ export const ruRU = {
     selectFinalPlaceholder: "Выберите модель итогового ответа",
     saveChanges: "Сохранить изменения",
     processingQuestion: "Обработка вашего вопроса...",
+    askMayTakeLong: "Это может занять несколько минут.",
   },
   podcasts: {
     generateEpisode: "Сгенерировать эпизод подкаста",

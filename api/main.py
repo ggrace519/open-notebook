@@ -123,6 +123,17 @@ app.add_middleware(
 )
 
 
+# CORS headers for error responses so the browser does not hide the body (e.g. "Failed to fetch")
+def _cors_headers_for_errors(request: Request) -> dict:
+    origin = request.headers.get("origin", "*")
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    }
+
+
 # Custom exception handler to ensure CORS headers are included in error responses
 # This helps when errors occur before the CORS middleware can process them
 @app.exception_handler(StarletteHTTPException)
@@ -135,18 +146,25 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     FastAPI, this handler won't be called. In that case, configure your reverse proxy
     to add CORS headers to error responses.
     """
-    # Get the origin from the request
-    origin = request.headers.get("origin", "*")
-
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-        headers={
-            **(exc.headers or {}), "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
+        headers={**(exc.headers or {}), **_cors_headers_for_errors(request)},
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all so unhandled exceptions return 500 with JSON and CORS headers.
+    Without this, the client may see "Failed to fetch" when the backend returns 500
+    without CORS or with a non-JSON body.
+    """
+    logger.exception(exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred"},
+        headers=_cors_headers_for_errors(request),
     )
 
 

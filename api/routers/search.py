@@ -62,6 +62,9 @@ async def stream_ask_response(
     question: str, strategy_model: Model, answer_model: Model, final_answer_model: Model
 ) -> AsyncGenerator[str, None]:
     """Stream the ask response as Server-Sent Events."""
+    # Send an immediate comment so the connection is not idle; prevents proxy/browser
+    # timeouts (e.g. 60s) while the first LLM call runs, which can take minutes.
+    yield ": started\n\n"
     try:
         final_answer = None
 
@@ -139,12 +142,18 @@ async def ask_knowledge_base(ask_request: AskRequest):
                 detail="Ask feature requires an embedding model. Please configure one in the Models section.",
             )
 
-        # For streaming response
+        # For streaming response: use text/event-stream and headers that discourage
+        # buffering/timeouts so long-running ask flows complete (proxies, nginx, etc.).
         return StreamingResponse(
             stream_ask_response(
                 ask_request.question, strategy_model, answer_model, final_answer_model
             ),
-            media_type="text/plain",
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # nginx: disable buffering
+            },
         )
 
     except HTTPException:

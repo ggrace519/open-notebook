@@ -25,6 +25,11 @@ export const ERROR_MAP: Record<string, string> = {
   "Answer model": "apiErrors.answerModelNotFound",
   "Final answer model": "apiErrors.finalAnswerModelNotFound",
   "No answer generated": "apiErrors.noAnswerGenerated",
+  "Failed to fetch": "apiErrors.askConnectionOrTimeout",
+  "Load failed": "apiErrors.askConnectionOrTimeout",
+  "NetworkError": "apiErrors.askConnectionOrTimeout",
+  "The operation was aborted.": "apiErrors.askConnectionOrTimeout",
+  "Authentication check failed": "apiErrors.unauthorized",
 };
 
 /**

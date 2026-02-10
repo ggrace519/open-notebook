@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Search, ChevronDown, AlertCircle, Settings, Save, MessageCircleQuestion } from 'lucide-react'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -273,6 +274,14 @@ export default function SearchPage() {
                       )}
                     </div>
                   </>
+                )}
+
+                {/* Error from ask (e.g. failed to fetch, timeout) */}
+                {ask.error && (
+                  <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md" role="alert">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{t(getApiErrorKey(ask.error))}</span>
+                  </div>
                 )}
 
                 {/* Streaming Response */}

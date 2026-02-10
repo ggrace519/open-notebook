@@ -171,6 +171,7 @@ export const zhTW = {
     answerModelNotFound: "未找到回答模型",
     finalAnswerModelNotFound: "未找到最終回答模型",
     noAnswerGenerated: "未能生成回答",
+    askConnectionOrTimeout: "連線遺失或請求逾時。提問可能需要幾分鐘，請重試或檢查網路。",
     genericError: "發生了意外錯誤",
   },
   connectionErrors: {
@@ -525,6 +526,7 @@ export const zhTW = {
     askAbout: "提問關於 “{query}”",
     orSearchKb: "或搜尋您的知識庫",
     processingQuestion: "正在處理您的問題...",
+    askMayTakeLong: "這可能需要幾分鐘。",
   },
   podcasts: {
     generateEpisode: "生成播客單集",

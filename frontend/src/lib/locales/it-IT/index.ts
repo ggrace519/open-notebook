@@ -171,6 +171,7 @@ export const itIT = {
     answerModelNotFound: "Modello risposta non trovato",
     finalAnswerModelNotFound: "Modello risposta finale non trovato",
     noAnswerGenerated: "Nessuna risposta generata",
+    askConnectionOrTimeout: "Connessione persa o richiesta scaduta. La domanda può richiedere diversi minuti—riprova o controlla la rete.",
     genericError: "Si è verificato un errore imprevisto",
   },
   connectionErrors: {
@@ -524,6 +525,7 @@ export const itIT = {
     selectFinalPlaceholder: "Seleziona modello risposta finale",
     saveChanges: "Salva modifiche",
     processingQuestion: "Elaborazione della tua domanda...",
+    askMayTakeLong: "Potrebbe richiedere alcuni minuti.",
   },
   podcasts: {
     generateEpisode: "Genera episodio podcast",

@@ -7,6 +7,17 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 
+def _cors_headers(request: Request) -> dict:
+    """Return CORS headers so error responses are not blocked by the browser."""
+    origin = request.headers.get("origin", "*")
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    }
+
+
 class PasswordAuthMiddleware(BaseHTTPMiddleware):
     """
     Middleware to check password authentication for all API requests.
@@ -37,39 +48,43 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)
 
-        # Check authorization header
-        auth_header = request.headers.get("Authorization")
-
-        if not auth_header:
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Missing authorization header"},
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Expected format: "Bearer {password}"
+        # Check authorization header (wrap in try/except so parsing errors return 401 with CORS)
         try:
+            auth_header = request.headers.get("Authorization")
+
+            if not auth_header:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Missing authorization header"},
+                    headers={**{"WWW-Authenticate": "Bearer"}, **_cors_headers(request)},
+                )
+
+            # Expected format: "Bearer {password}"
             scheme, credentials = auth_header.split(" ", 1)
             if scheme.lower() != "bearer":
-                raise ValueError("Invalid authentication scheme")
-        except ValueError:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid authorization header format"},
+                    headers={**{"WWW-Authenticate": "Bearer"}, **_cors_headers(request)},
+                )
+
+            # Check password
+            if credentials != self.password:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid password"},
+                    headers={**{"WWW-Authenticate": "Bearer"}, **_cors_headers(request)},
+                )
+        except (ValueError, AttributeError):
+            # split() or header value edge cases
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid authorization header format"},
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Check password
-        if credentials != self.password:
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Invalid password"},
-                headers={"WWW-Authenticate": "Bearer"},
+                headers={**{"WWW-Authenticate": "Bearer"}, **_cors_headers(request)},
             )
 
         # Password is correct, proceed with the request
-        response = await call_next(request)
-        return response
+        return await call_next(request)
 
 
 # Optional: HTTPBearer security scheme for OpenAPI documentation

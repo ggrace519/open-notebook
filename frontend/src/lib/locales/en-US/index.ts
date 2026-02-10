@@ -171,6 +171,7 @@ export const enUS = {
     answerModelNotFound: "Answer model not found",
     finalAnswerModelNotFound: "Final answer model not found",
     noAnswerGenerated: "No answer could be generated",
+    askConnectionOrTimeout: "Connection lost or request timed out. Ask can take several minutes—please try again or check your network.",
     genericError: "An unexpected error occurred",
   },
   connectionErrors: {
@@ -525,6 +526,7 @@ export const enUS = {
     selectFinalPlaceholder: "Select final answer model",
     saveChanges: "Save Changes",
     processingQuestion: "Processing your question...",
+    askMayTakeLong: "This may take a few minutes.",
   },
   podcasts: {
     generateEpisode: "Generate Podcast Episode",

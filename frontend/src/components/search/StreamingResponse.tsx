@@ -149,9 +149,12 @@ export function StreamingResponse({
 
       {/* Loading Indicator */}
       {isStreaming && !finalAnswer && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <LoadingSpinner size="sm" />
-          <span>{t.searchPage.processingQuestion}</span>
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <LoadingSpinner size="sm" />
+            <span>{t.searchPage.processingQuestion}</span>
+          </div>
+          <span className="text-xs">{t.searchPage.askMayTakeLong}</span>
         </div>
       )}
     </div>
