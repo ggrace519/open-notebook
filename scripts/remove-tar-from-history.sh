@@ -3,7 +3,7 @@
 # Requires: git-filter-repo (pip install git-filter-repo). Run in WSL or Git Bash from repo root:
 #   bash scripts/remove-tar-from-history.sh
 # Or pass your branch name:
-#   bash scripts/remove-tar-from-history.sh "fix/-Bug]--Bug-in-fetching-response-in-ask-&-search-#551"
+#   bash scripts/remove-tar-from-history.sh "fix/bug-in-ask-and-search"
 
 set -e
 # Default: current branch (use $1 if provided)
