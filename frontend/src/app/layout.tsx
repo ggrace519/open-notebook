@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   description: "Privacy-focused research and knowledge management",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
