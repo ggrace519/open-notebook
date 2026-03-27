@@ -70,7 +70,15 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.lzma
+*.tar.lz
+*.tar.lzo
+*.tar.lrz
+*.tar.lzo
 # PyCharm
 .idea/
 
