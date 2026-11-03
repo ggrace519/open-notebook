@@ -186,11 +186,12 @@ class TestNotebookMethods:
 
         mock_repo_query.side_effect = query_side_effect
         
-        # Mock get_notes to return our mock note
-        notebook.get_notes = AsyncMock(return_value=[mock_note])
+        # Mock get_notes to return our mock note (pydantic models reject
+        # assigning unknown attributes, so patch the method on the class)
         mock_repo_delete.return_value = True
 
-        result = await notebook.delete(delete_exclusive_sources=True)
+        with patch.object(Notebook, "get_notes", AsyncMock(return_value=[mock_note])):
+            result = await notebook.delete(delete_exclusive_sources=True)
         assert result["deleted_notes"] == 1  # One note deleted
         assert result["deleted_sources"] == 1  # One exclusive source deleted
         assert result["unlinked_sources"] == 1  # One shared source unlinked
@@ -237,7 +238,11 @@ class TestObjectModelMethods:
     @pytest.mark.asyncio
     async def test_get_all_from_base_class_raises(self):
         """Test ObjectModel.get_all() raises when called from base class."""
-        with pytest.raises(InvalidInputError, match="must be called from a specific model class"):
+        # get_all() wraps every error, including this InvalidInputError, in a
+        # DatabaseOperationError (same behavior as upstream).
+        with pytest.raises(
+            DatabaseOperationError, match="must be called from a specific model class"
+        ):
             await ObjectModel.get_all()
 
     @pytest.mark.asyncio
@@ -329,7 +334,8 @@ class TestObjectModelMethods:
         mock_repo_delete.return_value = True
 
         result = await notebook.delete()
-        assert result is True
+        # Notebook.delete() cascades and reports what it removed
+        assert result == {"deleted_notes": 0, "deleted_sources": 0, "unlinked_sources": 0}
         mock_repo_delete.assert_called_once()
 
     @pytest.mark.asyncio

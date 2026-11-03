@@ -59,7 +59,10 @@ class TestSettingsRouter:
         """Test PUT /api/settings updates only provided fields."""
         mock_settings = MagicMock()
         mock_settings.default_content_processing_engine_doc = "auto"
+        mock_settings.default_content_processing_engine_url = "auto"
         mock_settings.default_embedding_option = "ask"
+        mock_settings.auto_delete_files = "yes"
+        mock_settings.youtube_preferred_languages = ["en"]
         mock_settings.update = AsyncMock()
 
         mock_content_settings.get_instance = AsyncMock(return_value=mock_settings)

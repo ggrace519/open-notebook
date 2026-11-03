@@ -18,9 +18,9 @@ class TestContextRouter:
         mock_notebook.id = "notebook:123"
 
         mock_source = MagicMock()
-        mock_source.get_context = AsyncMock(return_value="Source context")
+        mock_source.get_context = AsyncMock(return_value={"id": "source:1", "title": "Source"})
         mock_note = MagicMock()
-        mock_note.get_context = AsyncMock(return_value="Note context")
+        mock_note.get_context = MagicMock(return_value={"id": "note:1", "title": "Note"})
 
         mock_notebook.get_sources = AsyncMock(return_value=[mock_source])
         mock_notebook.get_notes = AsyncMock(return_value=[mock_note])
@@ -48,11 +48,15 @@ class TestContextRouter:
         mock_notebook.id = "notebook:123"
 
         mock_source = MagicMock()
-        mock_source.get_context = AsyncMock(return_value="Full source context")
+        mock_source.get_context = AsyncMock(
+            return_value={"id": "source:1", "full_text": "Full source context"}
+        )
         mock_source_class.get = AsyncMock(return_value=mock_source)
 
         mock_note = MagicMock()
-        mock_note.get_context = AsyncMock(return_value="Full note context")
+        mock_note.get_context = MagicMock(
+            return_value={"id": "note:1", "content": "Full note context"}
+        )
         mock_note_class.get = AsyncMock(return_value=mock_note)
 
         mock_notebook_class.get = AsyncMock(return_value=mock_notebook)

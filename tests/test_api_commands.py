@@ -116,13 +116,15 @@ class TestCommandService:
 
     @pytest.mark.asyncio
     @patch("api.command_service.submit_command")
-    @patch("builtins.__import__")
-    async def test_submit_command_job_import_error(self, mock_import, mock_submit_command):
+    async def test_submit_command_job_import_error(self, mock_submit_command):
         """Test CommandService.submit_command_job handles import errors."""
+        import builtins
+
         from api.command_service import CommandService
 
-        # Mock import failure for commands.podcast_commands
-        original_import = __import__
+        # Mock import failure for commands.podcast_commands. Keep a reference to the
+        # real __import__ so every other import still works.
+        original_import = builtins.__import__
         def failing_import(name, *args, **kwargs):
             if name == "commands.podcast_commands":
                 raise ImportError("Module not found")

@@ -152,3 +152,6 @@ specs/
 .cursor\rules\codacy.mdc
 open-notebook-image.tar
 scripts/save-image.sh
+
+# Stray nested clone (was committed as a gitlink and broke actions/checkout submodule cleanup)
+/open-notebook/

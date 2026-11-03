@@ -21,13 +21,16 @@ class TestObjectModelEdgeCases:
     @pytest.mark.asyncio
     @patch("open_notebook.domain.base.repo_create")
     async def test_save_validation_error(self, mock_repo_create):
-        """Test ObjectModel.save() raises ValidationError on invalid data."""
+        """Test ObjectModel.save() refuses invalid data before touching the database."""
         notebook = Notebook(name="Test", description="")
         # Force validation error by corrupting internal state
         notebook.name = ""  # Invalid
 
-        with pytest.raises(ValidationError):
+        # save() re-validates and wraps the validator's InvalidInputError in a
+        # DatabaseOperationError (same behavior as upstream).
+        with pytest.raises(DatabaseOperationError, match="Notebook name cannot be empty"):
             await notebook.save()
+        mock_repo_create.assert_not_called()
 
     @pytest.mark.asyncio
     @patch("open_notebook.domain.base.repo_update")
@@ -301,12 +304,18 @@ class TestSourceEdgeCases:
         assert isinstance(context, dict)
         assert context.get("title") == "Test Source"
 
-    def test_get_context_empty_full_text(self):
+    @pytest.mark.asyncio
+    async def test_get_context_empty_full_text(self):
         """Test Source.get_context() handles empty full_text."""
         source = Source(title="Test Source", topics=[], full_text="")
 
-        context = source.get_context()
-        assert "Test Source" in context
+        with patch.object(Source, "get_insights", AsyncMock(return_value=[])):
+            context = await source.get_context()
+            long_context = await source.get_context(context_size="long")
+
+        assert context["title"] == "Test Source"
+        assert context["insights"] == []
+        assert long_context["full_text"] == ""
 
 
 class TestNoteEdgeCases:
