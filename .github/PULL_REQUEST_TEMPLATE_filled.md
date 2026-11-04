@@ -42,7 +42,7 @@ Fixes #546
 
 <!-- This section helps ensure your PR aligns with our project vision -->
 
-**Which design principles does this PR support?** (See [DESIGN_PRINCIPLES.md](../DESIGN_PRINCIPLES.md))
+**Which design principles does this PR support?** (See [design-principles.md](../docs/7-DEVELOPMENT/design-principles.md))
 
 - [ ] Privacy First
 - [x] Simplicity Over Features
@@ -105,7 +105,7 @@ Fixes #546
 Before submitting, please verify:
 
 - [x] I have read [CONTRIBUTING.md](../CONTRIBUTING.md)
-- [ ] I have read [DESIGN_PRINCIPLES.md](../DESIGN_PRINCIPLES.md)
+- [ ] I have read [design-principles.md](../docs/7-DEVELOPMENT/design-principles.md)
 - [ ] This PR addresses an approved issue that was assigned to me
 - [x] I have not included unrelated changes in this PR
 - [x] My PR title follows conventional commits format (e.g., "feat: add user authentication")
