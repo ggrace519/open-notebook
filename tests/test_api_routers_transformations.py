@@ -92,6 +92,11 @@ class TestTransformationsRouter:
         mock_transform.id = "transform:123"
         mock_transform.name = "updated"
         mock_transform.title = "Updated"
+        mock_transform.description = "Updated description"
+        mock_transform.prompt = "Summarize this"
+        mock_transform.apply_default = False
+        mock_transform.created = "2024-01-01T00:00:00"
+        mock_transform.updated = "2024-01-01T00:00:00"
         mock_transform.save = AsyncMock()
 
         mock_transformation_class.get = AsyncMock(return_value=mock_transform)
@@ -101,6 +106,8 @@ class TestTransformationsRouter:
             json={"title": "Updated Title"},
         )
         assert response.status_code == 200
+        assert mock_transform.title == "Updated Title"
+        mock_transform.save.assert_awaited_once()
 
     @pytest.mark.asyncio
     @patch("api.routers.transformations.Transformation")

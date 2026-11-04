@@ -48,6 +48,8 @@ async def search_knowledge_base(search_request: SearchRequest):
             search_type=search_request.type,
         )
 
+    except HTTPException:
+        raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except DatabaseOperationError as e:

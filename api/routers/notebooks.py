@@ -12,7 +12,7 @@ from api.models import (
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, OpenNotebookError
 
 router = APIRouter()
 
@@ -108,6 +108,8 @@ async def get_notebook_delete_preview(notebook_id: str):
             shared_source_count=preview["shared_source_count"],
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error getting delete preview for notebook {notebook_id}: {e}")

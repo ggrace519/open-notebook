@@ -47,50 +47,57 @@ class TestSourcesRouter:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.Source")
-    @patch("api.routers.sources.submit_command")
     @patch("api.routers.sources.Notebook")
-    async def test_create_source_url(self, mock_notebook_class, mock_submit_command, mock_source_class, client):
-        """Test POST /api/sources/json creates source from URL."""
-        mock_notebook = MagicMock()
-        mock_notebook.id = "notebook:1"
-        mock_notebook_class.get = AsyncMock(return_value=mock_notebook)
+    async def test_create_source_url(
+        self, mock_notebook_class, mock_source_class, mock_submit_job, client
+    ):
+        """Test POST /api/sources/json queues a link source for async processing."""
+        mock_notebook_class.get = AsyncMock(return_value=MagicMock())
 
         mock_source = MagicMock()
         mock_source.id = "source:123"
-        mock_source.title = "Test Source"
+        mock_source.title = "Processing..."
         mock_source.topics = []
-        mock_source.asset = None
         mock_source.created = "2024-01-01T00:00:00"
         mock_source.updated = "2024-01-01T00:00:00"
         mock_source.save = AsyncMock()
-        mock_source.relate = AsyncMock()
+        mock_source.add_to_notebook = AsyncMock()
 
         mock_source_class.return_value = mock_source
-        mock_submit_command.return_value = "command:456"
+        mock_submit_job.return_value = "command:456"
 
         response = client.post(
             "/api/sources/json",
             json={
-                "type": "url",
+                "type": "link",
                 "url": "https://example.com",
                 "notebook_id": "notebook:1",
+                "async_processing": True,
             },
         )
-        # May return 200 or 202 depending on async_processing
         assert response.status_code in [200, 202]
+        data = response.json()
+        assert data["command_id"] == "command:456"
+        mock_source.add_to_notebook.assert_awaited_once_with("notebook:1")
 
     @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     @patch("api.routers.sources.Source")
-    async def test_get_source_by_id(self, mock_source_class, client):
+    async def test_get_source_by_id(self, mock_source_class, mock_repo_query, client):
         """Test GET /api/sources/{id} returns specific source."""
         mock_source = MagicMock()
         mock_source.id = "source:123"
         mock_source.title = "Test Source"
         mock_source.topics = []
         mock_source.asset = None
+        mock_source.full_text = None
+        mock_source.command = None
         mock_source.created = "2024-01-01T00:00:00"
         mock_source.updated = "2024-01-01T00:00:00"
+        mock_source.get_embedded_chunks = AsyncMock(return_value=0)
+        mock_repo_query.return_value = ["notebook:1"]
 
         mock_source_class.get = AsyncMock(return_value=mock_source)
 
@@ -107,7 +114,12 @@ class TestSourcesRouter:
         mock_source.id = "source:123"
         mock_source.title = "Updated Title"
         mock_source.topics = ["topic1"]
+        mock_source.asset = None
+        mock_source.full_text = None
+        mock_source.created = "2024-01-01T00:00:00"
+        mock_source.updated = "2024-01-01T00:00:00"
         mock_source.save = AsyncMock()
+        mock_source.get_embedded_chunks = AsyncMock(return_value=0)
 
         mock_source_class.get = AsyncMock(return_value=mock_source)
 
@@ -160,14 +172,18 @@ class TestSourcesRouter:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
+    @patch("api.routers.sources.Transformation")
     @patch("api.routers.sources.submit_command")
     @patch("api.routers.sources.Source")
-    async def test_create_source_insight(self, mock_source_class, mock_submit_command, client):
+    async def test_create_source_insight(
+        self, mock_source_class, mock_submit_command, mock_transformation_class, client
+    ):
         """Test POST /api/sources/{id}/insights creates insight."""
         mock_source = MagicMock()
         mock_source.id = "source:123"
 
         mock_source_class.get = AsyncMock(return_value=mock_source)
+        mock_transformation_class.get = AsyncMock(return_value=MagicMock())
         mock_submit_command.return_value = "command:789"
 
         response = client.post(

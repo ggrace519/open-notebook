@@ -60,16 +60,15 @@ class TestNoteMethods:
             mock_submit.assert_not_called()
 
     @pytest.mark.asyncio
-    @patch("open_notebook.domain.notebook.repo_create")
-    async def test_save_empty_content_no_embed(self, mock_repo_create):
-        """Test Note.save() does not submit embed command when content is empty."""
-        # Empty content should be rejected by validator, but test the save logic
-        note = Note(title="Test Note", content="   ")  # Whitespace only
-        note.id = None
+    @patch("open_notebook.domain.notebook.submit_command")
+    @patch("open_notebook.domain.base.repo_create")
+    async def test_save_empty_content_no_embed(self, mock_repo_create, mock_submit):
+        """Test whitespace-only content is rejected, so nothing is saved or embedded."""
+        with pytest.raises(InvalidInputError, match="Note content cannot be empty"):
+            Note(title="Test Note", content="   ")  # Whitespace only
 
-        # This would fail validation, but if it gets through, test save logic
-        # Actually, validator rejects empty/whitespace, so this test may not be reachable
-        pass
+        mock_repo_create.assert_not_called()
+        mock_submit.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_add_to_notebook_empty_id(self):
@@ -81,7 +80,7 @@ class TestNoteMethods:
             await note.add_to_notebook("")
 
     @pytest.mark.asyncio
-    @patch("open_notebook.domain.notebook.repo_relate")
+    @patch("open_notebook.domain.base.repo_relate")
     async def test_add_to_notebook_success(self, mock_repo_relate):
         """Test Note.add_to_notebook() creates artifact relationship."""
         note = Note(title="Test", content="Content")

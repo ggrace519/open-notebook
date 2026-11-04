@@ -116,6 +116,8 @@ class TestNotebooksRouter:
     async def test_get_notebook_delete_preview(self, mock_notebook_class, client):
         """Test GET /api/notebooks/{id}/delete-preview returns preview."""
         mock_notebook = MagicMock()
+        mock_notebook.id = "notebook:123"
+        mock_notebook.name = "Test Notebook"
         mock_notebook.get_delete_preview = AsyncMock(
             return_value={
                 "note_count": 5,
@@ -168,7 +170,8 @@ class TestNotesRouter:
         assert data[0]["title"] == "Test Note"
 
     @pytest.mark.asyncio
-    @patch("api.routers.notes.Notebook")
+    # The notes router imports Notebook inside the handler, so patch it at its source.
+    @patch("open_notebook.domain.notebook.Notebook")
     async def test_get_notes_by_notebook(self, mock_notebook_class, client):
         """Test GET /api/notes?notebook_id=X returns notes for notebook."""
         mock_notebook = MagicMock()

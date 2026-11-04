@@ -3,7 +3,7 @@ from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
 from open_notebook.domain.notebook import SourceInsight
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, OpenNotebookError
 
 router = APIRouter()
 
@@ -28,6 +28,8 @@ async def get_insight(insight_id: str):
             updated=str(insight.updated),
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching insight {insight_id}: {str(e)}")
