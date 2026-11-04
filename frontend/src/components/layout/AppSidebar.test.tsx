@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { usePathname } from 'next/navigation'
 import { AppSidebar } from './AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 
@@ -11,18 +12,49 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
-// But setup.ts has some basic mocks, let's see.
 
 describe('AppSidebar', () => {
+  afterEach(() => {
+    vi.mocked(usePathname).mockReturnValue('')
+  })
+
+  it('highlights only Models (not Settings) on the Models page', () => {
+    vi.mocked(usePathname).mockReturnValue('/settings/models')
+
+    const { container } = render(<AppSidebar />)
+
+    const modelsButton = container.querySelector('a[href="/settings/models"] button')
+    const settingsButton = container.querySelector('a[href="/settings"] button')
+
+    expect(modelsButton?.className).toContain('font-semibold')
+    expect(settingsButton?.className).toContain('font-medium')
+    expect(settingsButton?.className).not.toContain('font-semibold')
+  })
+
   it('renders correctly when expanded', () => {
     render(<AppSidebar />)
-    
-    // Check for logo or app name (using actual locale value)
-    expect(screen.getByText(/Open Notebook/i)).toBeDefined()
-    
-    // Check for navigation items (using actual locale values)
-    expect(screen.getByText(/Sources/i)).toBeDefined()
-    expect(screen.getByText(/Notebooks/i)).toBeDefined()
+
+    // With mocked t() returning keys, check for translation key strings
+    expect(screen.getByText('common.appName')).toBeDefined()
+    expect(screen.getByText('navigation.sources')).toBeDefined()
+    expect(screen.getByText('navigation.notebooks')).toBeDefined()
+  })
+
+  it('uses consistent spacing for expanded footer actions', () => {
+    render(<AppSidebar />)
+
+    const themeButton = screen.getByText('common.theme').closest('button')
+    const languageButton = screen.getByText('common.language').closest('button')
+    const signOutButton = screen.getByRole('button', { name: 'common.signOut' })
+
+    expect(themeButton?.className.split(/\s+/)).toContain('px-3')
+
+    for (const button of [themeButton, languageButton, signOutButton]) {
+      expect(button?.className.split(/\s+/)).toContain('gap-2')
+    }
+
+    expect(themeButton?.querySelector(':scope > span.relative.size-4')).not.toBeNull()
+    expect(signOutButton.className.split(/\s+/)).not.toContain('gap-3')
   })
 
   it('toggles collapse state when clicking handle', () => {
@@ -33,16 +65,9 @@ describe('AppSidebar', () => {
     } as any)
 
     render(<AppSidebar />)
-    
-    // The collapse button has ChevronLeft icon when expanded
-    // The collapse button has ChevronLeft icon when expanded
-    // const toggleButton = screen.getAllByRole('button')[0]
-    // Let's use more specific selector if possible, but AppSidebar has many buttons
-    // Actually, line 147 has the button
-    
-    // Use data-testid for reliable selection
+
     fireEvent.click(screen.getByTestId('sidebar-toggle'))
-    
+
     expect(toggleCollapse).toHaveBeenCalled()
   })
 
@@ -53,8 +78,8 @@ describe('AppSidebar', () => {
     } as any)
 
     render(<AppSidebar />)
-    
+
     // In collapsed mode, app name shouldn't be visible (as text)
-    expect(screen.queryByText(/Open Notebook/i)).toBeNull()
+    expect(screen.queryByText('common.appName')).toBeNull()
   })
 })

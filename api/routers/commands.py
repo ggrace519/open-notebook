@@ -2,26 +2,13 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from surreal_commands import registry
 
 from api.command_service import CommandService
+from open_notebook.exceptions import OpenNotebookError
 
 router = APIRouter()
-
-
-class CommandExecutionRequest(BaseModel):
-    command: str = Field(
-        ..., description="Command function name (e.g., 'process_text')"
-    )
-    app: str = Field(..., description="Application name (e.g., 'open_notebook')")
-    input: Dict[str, Any] = Field(..., description="Arguments to pass to the command")
-
-
-class CommandJobResponse(BaseModel):
-    job_id: str
-    status: str
-    message: str
 
 
 class CommandJobStatusResponse(BaseModel):
@@ -34,43 +21,6 @@ class CommandJobStatusResponse(BaseModel):
     progress: Optional[Dict[str, Any]] = None
 
 
-@router.post("/commands/jobs", response_model=CommandJobResponse)
-async def execute_command(request: CommandExecutionRequest):
-    """
-    Submit a command for background processing.
-    Returns immediately with job ID for status tracking.
-
-    Example request:
-    {
-        "command": "process_text",
-        "app": "open_notebook",
-        "input": {
-            "text": "Hello world",
-            "operation": "uppercase"
-        }
-    }
-    """
-    try:
-        # Submit command using app name (not module name)
-        job_id = await CommandService.submit_command_job(
-            module_name=request.app,  # This should be "open_notebook"
-            command_name=request.command,
-            command_args=request.input,
-        )
-
-        return CommandJobResponse(
-            job_id=job_id,
-            status="submitted",
-            message=f"Command '{request.command}' submitted successfully",
-        )
-
-    except Exception as e:
-        logger.error(f"Error submitting command: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to submit command"
-        )
-
-
 @router.get("/commands/jobs/{job_id}", response_model=CommandJobStatusResponse)
 async def get_command_job_status(job_id: str):
     """Get the status of a specific command job"""
@@ -78,11 +28,13 @@ async def get_command_job_status(job_id: str):
         status_data = await CommandService.get_command_status(job_id)
         return CommandJobStatusResponse(**status_data)
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching job status: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch job status"
-        )
+        raise HTTPException(status_code=500, detail="Failed to fetch job status")
 
 
 @router.get("/commands/jobs", response_model=List[Dict[str, Any]])
@@ -98,11 +50,13 @@ async def list_command_jobs(
         )
         return jobs
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error listing command jobs: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to list command jobs"
-        )
+        raise HTTPException(status_code=500, detail="Failed to list command jobs")
 
 
 @router.delete("/commands/jobs/{job_id}")
@@ -112,11 +66,13 @@ async def cancel_command_job(job_id: str):
         success = await CommandService.cancel_command_job(job_id)
         return {"job_id": job_id, "cancelled": success}
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error cancelling command job: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to cancel command job"
-        )
+        raise HTTPException(status_code=500, detail="Failed to cancel command job")
 
 
 @router.get("/commands/registry/debug")

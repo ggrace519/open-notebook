@@ -4,11 +4,10 @@ Tests for RecordModel singleton pattern and methods.
 Covers get_instance(), update(), _load_from_db(), and singleton behavior.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from open_notebook.domain.base import RecordModel
 from open_notebook.domain.content_settings import ContentSettings
 
 
@@ -50,6 +49,7 @@ class TestRecordModel:
         ]
 
         instance = await ContentSettings.get_instance()
+        assert isinstance(instance, ContentSettings)
         assert instance.default_embedding_option == "always"
         mock_repo_query.assert_called_once()
 
@@ -144,6 +144,5 @@ class TestRecordModel:
         ContentSettings.clear_instance()
         instance2 = ContentSettings()
 
-        # After clear, should be different instances (or same if singleton recreated)
-        # The key is that clear_instance() doesn't raise
-        assert ContentSettings.record_id not in ContentSettings._instances or True
+        # After clear, the singleton is rebuilt as a fresh instance
+        assert instance1 is not instance2

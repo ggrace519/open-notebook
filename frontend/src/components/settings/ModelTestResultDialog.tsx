@@ -33,11 +33,11 @@ export function ModelTestResultDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {result.success ? (
-              <Check className="h-5 w-5 text-emerald-500" />
+              <Check className="h-5 w-5 text-fern" />
             ) : (
               <X className="h-5 w-5 text-destructive" />
             )}
-            {result.success ? t.models.testModelSuccess : t.models.testModelFailed}
+            {result.success ? t('models.testModelSuccess') : t('models.testModelFailed')}
           </DialogTitle>
         </DialogHeader>
 
@@ -54,7 +54,7 @@ export function ModelTestResultDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t.common.done}
+            {t('common.done')}
           </Button>
         </DialogFooter>
       </DialogContent>

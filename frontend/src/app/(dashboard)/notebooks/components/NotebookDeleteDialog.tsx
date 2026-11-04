@@ -69,21 +69,21 @@ export function NotebookDeleteDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t.notebooks.deleteNotebook}</AlertDialogTitle>
+          <AlertDialogTitle>{t('notebooks.deleteNotebook')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t.notebooks.deleteNotebookDesc.replace('{name}', notebookName)}
+            {t('notebooks.deleteNotebookDesc', { name: notebookName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="py-4 space-y-3">
+        <div className="space-y-3">
           {isLoadingPreview ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <LoadingSpinner size="sm" />
-              <span>{t.notebooks.deleteNotebookLoading}</span>
+              <span>{t('notebooks.deleteNotebookLoading')}</span>
             </div>
           ) : previewError ? (
             <div className="text-sm text-destructive">
-              {t.common.error}: {previewError.message || 'Failed to load preview'}
+              {t('common.error')}: {previewError.message || 'Failed to load preview'}
             </div>
           ) : preview ? (
             <>
@@ -91,13 +91,10 @@ export function NotebookDeleteDialog({
               <div className="text-sm">
                 {preview.note_count > 0 ? (
                   <p className="text-destructive font-medium">
-                    {t.notebooks.deleteNotebookNotes.replace(
-                      '{count}',
-                      String(preview.note_count)
-                    )}
+                    {t('notebooks.deleteNotebookNotes', { count: preview.note_count })}
                   </p>
                 ) : (
-                  <p className="text-muted-foreground">{t.notebooks.deleteNotebookNoNotes}</p>
+                  <p className="text-muted-foreground">{t('notebooks.deleteNotebookNoNotes')}</p>
                 )}
               </div>
 
@@ -105,10 +102,7 @@ export function NotebookDeleteDialog({
               {preview.shared_source_count > 0 && (
                 <div className="text-sm">
                   <p className="text-muted-foreground">
-                    {t.notebooks.deleteNotebookSharedSources.replace(
-                      '{count}',
-                      String(preview.shared_source_count)
-                    )}
+                    {t('notebooks.deleteNotebookSharedSources', { count: preview.shared_source_count })}
                   </p>
                 </div>
               )}
@@ -116,7 +110,7 @@ export function NotebookDeleteDialog({
               {/* No sources message */}
               {preview.exclusive_source_count === 0 && preview.shared_source_count === 0 && (
                 <div className="text-sm">
-                  <p className="text-muted-foreground">{t.notebooks.deleteNotebookNoSources}</p>
+                  <p className="text-muted-foreground">{t('notebooks.deleteNotebookNoSources')}</p>
                 </div>
               )}
 
@@ -124,10 +118,7 @@ export function NotebookDeleteDialog({
               {preview.exclusive_source_count > 0 && (
                 <div className="pt-3 border-t space-y-3">
                   <p className="text-sm text-destructive font-medium">
-                    {t.notebooks.deleteNotebookExclusiveSources.replace(
-                      '{count}',
-                      String(preview.exclusive_source_count)
-                    )}
+                    {t('notebooks.deleteNotebookExclusiveSources', { count: preview.exclusive_source_count })}
                   </p>
                   <RadioGroup
                     value={sourceAction}
@@ -137,13 +128,13 @@ export function NotebookDeleteDialog({
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="delete" id="delete-sources" />
                       <Label htmlFor="delete-sources" className="text-sm cursor-pointer">
-                        {t.notebooks.deleteExclusiveSourcesLabel}
+                        {t('notebooks.deleteExclusiveSourcesLabel')}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="keep" id="keep-sources" />
                       <Label htmlFor="keep-sources" className="text-sm cursor-pointer">
-                        {t.notebooks.keepExclusiveSourcesLabel}
+                        {t('notebooks.keepExclusiveSourcesLabel')}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -154,19 +145,19 @@ export function NotebookDeleteDialog({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>{t.common.cancel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isDeleting || isLoadingPreview}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-destructive text-white hover:bg-destructive/90"
           >
             {isDeleting ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                {t.common.deleting}
+                {t('common.deleting')}
               </>
             ) : (
-              t.common.delete
+              t('common.delete')
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

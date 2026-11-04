@@ -17,13 +17,20 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
+import {
+  applyBulkSourceContext,
+  applyBulkNoteContext,
+  computeSourceSelections,
+  computeNoteSelections,
+  type SourceContextDefault,
+  type SourceBulkAction,
+  type NoteContextDefault,
+} from '@/lib/utils/source-context'
 
-export type ContextMode = 'off' | 'insights' | 'full'
-
-export interface ContextSelections {
-  sources: Record<string, ContextMode>
-  notes: Record<string, ContextMode>
-}
+// Re-exported from the shared types module for backward compatibility; several
+// components historically import these from this route file.
+import type { ContextMode, ContextSelections, NoteContextMode } from '@/lib/types/notebook-context'
+export type { ContextMode, ContextSelections, NoteContextMode }
 
 export default function NotebookPage() {
   const { t } = useTranslation()
@@ -58,52 +65,70 @@ export default function NotebookPage() {
     notes: {}
   })
 
+  // The default context mode applied to sources as they load. A bulk
+  // include/exclude updates this so sources loaded later via pagination follow
+  // the same intent instead of reverting to "included" (#223/#915).
+  const [sourceContextDefault, setSourceContextDefault] = useState<SourceContextDefault>('include')
+
+  // Same idea for notes loaded later (notes are binary: included/off).
+  const [noteContextDefault, setNoteContextDefault] = useState<NoteContextDefault>('include')
+
   // Initialize and update selections when sources load or change
   useEffect(() => {
     if (sources && sources.length > 0) {
-      setContextSelections(prev => {
-        const newSourceSelections = { ...prev.sources }
-        sources.forEach(source => {
-          const currentMode = newSourceSelections[source.id]
-          const hasInsights = source.insights_count > 0
-
-          if (currentMode === undefined) {
-            // Initial setup - default based on insights availability
-            newSourceSelections[source.id] = hasInsights ? 'insights' : 'full'
-          } else if (currentMode === 'full' && hasInsights) {
-            // Source gained insights while in 'full' mode - auto-switch to 'insights'
-            newSourceSelections[source.id] = 'insights'
-          }
-        })
-        return { ...prev, sources: newSourceSelections }
-      })
+      setContextSelections(prev => ({
+        ...prev,
+        sources: computeSourceSelections(prev.sources, sources, sourceContextDefault),
+      }))
     }
-  }, [sources])
+  }, [sources, sourceContextDefault])
 
   useEffect(() => {
     if (notes && notes.length > 0) {
-      setContextSelections(prev => {
-        const newNoteSelections = { ...prev.notes }
-        notes.forEach(note => {
-          // Only set default if not already set
-          if (!(note.id in newNoteSelections)) {
-            // Notes default to 'full'
-            newNoteSelections[note.id] = 'full'
-          }
-        })
-        return { ...prev, notes: newNoteSelections }
-      })
+      setContextSelections(prev => ({
+        ...prev,
+        notes: computeNoteSelections(prev.notes, notes, noteContextDefault),
+      }))
     }
-  }, [notes])
+  }, [notes, noteContextDefault])
 
-  // Handler to update context selection
-  const handleContextModeChange = (itemId: string, mode: ContextMode, type: 'source' | 'note') => {
+  const handleSourceContextModeChange = (sourceId: string, mode: ContextMode) => {
     setContextSelections(prev => ({
       ...prev,
-      [type === 'source' ? 'sources' : 'notes']: {
-        ...(type === 'source' ? prev.sources : prev.notes),
-        [itemId]: mode
+      sources: {
+        ...prev.sources,
+        [sourceId]: mode
       }
+    }))
+  }
+
+  const handleNoteContextModeChange = (noteId: string, mode: NoteContextMode) => {
+    setContextSelections(prev => ({
+      ...prev,
+      notes: {
+        ...prev.notes,
+        [noteId]: mode
+      }
+    }))
+  }
+
+  // Bulk-apply a context action (insights-only / full / exclude) to every
+  // source at once (#223). Also records the action as the default for sources
+  // loaded later (#915).
+  const handleBulkSourceContext = (action: SourceBulkAction) => {
+    setSourceContextDefault(action)
+    setContextSelections(prev => ({
+      ...prev,
+      sources: applyBulkSourceContext(prev.sources, sources ?? [], action),
+    }))
+  }
+
+  // Bulk include/exclude every note from the chat context at once (#223).
+  const handleBulkNoteContext = (action: NoteContextDefault) => {
+    setNoteContextDefault(action)
+    setContextSelections(prev => ({
+      ...prev,
+      notes: applyBulkNoteContext(prev.notes, notes ?? [], action),
     }))
   }
 
@@ -119,8 +144,8 @@ export default function NotebookPage() {
     return (
       <AppShell>
         <div className="p-6">
-          <h1 className="text-2xl font-bold mb-4">{t.notebooks.notFound}</h1>
-          <p className="text-muted-foreground">{t.notebooks.notFoundDesc}</p>
+          <h1 className="text-2xl font-bold mb-4">{t('notebooks.notFound')}</h1>
+          <p className="text-muted-foreground">{t('notebooks.notFoundDesc')}</p>
         </div>
       </AppShell>
     )
@@ -145,15 +170,15 @@ export default function NotebookPage() {
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="sources" className="gap-2">
                       <FileText className="h-4 w-4" />
-                      {t.navigation.sources}
+                      {t('navigation.sources')}
                     </TabsTrigger>
                     <TabsTrigger value="notes" className="gap-2">
                       <StickyNote className="h-4 w-4" />
-                      {t.common.notes}
+                      {t('common.notes')}
                     </TabsTrigger>
                     <TabsTrigger value="chat" className="gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      {t.common.chat}
+                      {t('common.chat')}
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -169,7 +194,8 @@ export default function NotebookPage() {
                     notebookName={notebook?.name}
                     onRefresh={refetchSources}
                     contextSelections={contextSelections.sources}
-                    onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                    onContextModeChange={handleSourceContextModeChange}
+                    onBulkContextModeChange={handleBulkSourceContext}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
@@ -181,7 +207,8 @@ export default function NotebookPage() {
                     isLoading={notesLoading}
                     notebookId={notebookId}
                     contextSelections={contextSelections.notes}
-                    onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+                    onContextModeChange={handleNoteContextModeChange}
+                    onBulkContextModeChange={handleBulkNoteContext}
                   />
                 )}
                 {mobileActiveTab === 'chat' && (
@@ -213,7 +240,8 @@ export default function NotebookPage() {
                 notebookName={notebook?.name}
                 onRefresh={refetchSources}
                 contextSelections={contextSelections.sources}
-                onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                onContextModeChange={handleSourceContextModeChange}
+                onBulkContextModeChange={handleBulkSourceContext}
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}
@@ -230,7 +258,8 @@ export default function NotebookPage() {
                 isLoading={notesLoading}
                 notebookId={notebookId}
                 contextSelections={contextSelections.notes}
-                onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+                onContextModeChange={handleNoteContextModeChange}
+                onBulkContextModeChange={handleBulkNoteContext}
               />
             </div>
 

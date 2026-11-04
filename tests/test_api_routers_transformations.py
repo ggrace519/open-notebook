@@ -21,6 +21,7 @@ class TestTransformationsRouter:
         mock_transform.description = "Creates summary"
         mock_transform.prompt = "Summarize: {content}"
         mock_transform.apply_default = True
+        mock_transform.model_id = None
         mock_transform.created = "2024-01-01T00:00:00"
         mock_transform.updated = "2024-01-01T00:00:00"
 
@@ -43,6 +44,7 @@ class TestTransformationsRouter:
         mock_transform.description = "Description"
         mock_transform.prompt = "Prompt: {content}"
         mock_transform.apply_default = False
+        mock_transform.model_id = None
         mock_transform.created = "2024-01-01T00:00:00"
         mock_transform.updated = "2024-01-01T00:00:00"
         mock_transform.save = AsyncMock()
@@ -74,6 +76,7 @@ class TestTransformationsRouter:
         mock_transform.description = "Description"
         mock_transform.prompt = "Prompt"
         mock_transform.apply_default = True
+        mock_transform.model_id = None
         mock_transform.created = "2024-01-01T00:00:00"
         mock_transform.updated = "2024-01-01T00:00:00"
 
@@ -95,6 +98,7 @@ class TestTransformationsRouter:
         mock_transform.description = "Updated description"
         mock_transform.prompt = "Summarize this"
         mock_transform.apply_default = False
+        mock_transform.model_id = None
         mock_transform.created = "2024-01-01T00:00:00"
         mock_transform.updated = "2024-01-01T00:00:00"
         mock_transform.save = AsyncMock()

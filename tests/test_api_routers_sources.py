@@ -4,8 +4,8 @@ Tests for /api/sources router endpoints.
 Focuses on increasing coverage from 10%.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
 from io import BytesIO
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -36,7 +36,9 @@ class TestSourcesRouter:
     @pytest.mark.asyncio
     @patch("api.routers.sources.repo_query")
     @patch("api.routers.sources.Notebook")
-    async def test_get_sources_with_notebook_filter(self, mock_notebook_class, mock_repo_query, client):
+    async def test_get_sources_with_notebook_filter(
+        self, mock_notebook_class, mock_repo_query, client
+    ):
         """Test GET /api/sources?notebook_id=X filters by notebook."""
         mock_notebook = MagicMock()
         mock_notebook.id = "notebook:123"
@@ -47,11 +49,19 @@ class TestSourcesRouter:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.validate_url", new_callable=AsyncMock)
+    @patch(
+        "api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock
+    )
     @patch("api.routers.sources.Source")
     @patch("api.routers.sources.Notebook")
     async def test_create_source_url(
-        self, mock_notebook_class, mock_source_class, mock_submit_job, client
+        self,
+        mock_notebook_class,
+        mock_source_class,
+        mock_submit_job,
+        mock_validate_url,
+        client,
     ):
         """Test POST /api/sources/json queues a link source for async processing."""
         mock_notebook_class.get = AsyncMock(return_value=MagicMock())
@@ -60,6 +70,7 @@ class TestSourcesRouter:
         mock_source.id = "source:123"
         mock_source.title = "Processing..."
         mock_source.topics = []
+        mock_source.asset = None
         mock_source.created = "2024-01-01T00:00:00"
         mock_source.updated = "2024-01-01T00:00:00"
         mock_source.save = AsyncMock()
@@ -81,6 +92,8 @@ class TestSourcesRouter:
         data = response.json()
         assert data["command_id"] == "command:456"
         mock_source.add_to_notebook.assert_awaited_once_with("notebook:1")
+        # The SSRF guard must run on the submitted URL
+        mock_validate_url.assert_awaited_once_with("https://example.com", "source")
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
@@ -194,8 +207,9 @@ class TestSourcesRouter:
 
     def test_generate_unique_filename_new_file(self):
         """Test generate_unique_filename for new file."""
-        from api.routers.sources import generate_unique_filename
         from tempfile import TemporaryDirectory
+
+        from api.routers.sources import generate_unique_filename
 
         with TemporaryDirectory() as tmpdir:
             filename = generate_unique_filename("test.pdf", tmpdir)
@@ -203,9 +217,10 @@ class TestSourcesRouter:
 
     def test_generate_unique_filename_existing_file(self):
         """Test generate_unique_filename appends counter for existing file."""
-        from api.routers.sources import generate_unique_filename
-        from tempfile import TemporaryDirectory
         from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        from api.routers.sources import generate_unique_filename
 
         with TemporaryDirectory() as tmpdir:
             # Create existing file
@@ -218,10 +233,12 @@ class TestSourcesRouter:
     @pytest.mark.asyncio
     async def test_save_uploaded_file_success(self):
         """Test save_uploaded_file saves file correctly."""
-        from api.routers.sources import save_uploaded_file
-        from tempfile import TemporaryDirectory
-        from fastapi import UploadFile
         from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        from fastapi import UploadFile
+
+        from api.routers.sources import save_uploaded_file
 
         with TemporaryDirectory() as tmpdir:
             with patch("api.routers.sources.UPLOADS_FOLDER", tmpdir):
@@ -237,8 +254,9 @@ class TestSourcesRouter:
     @pytest.mark.asyncio
     async def test_save_uploaded_file_no_filename(self):
         """Test save_uploaded_file raises error for missing filename."""
-        from api.routers.sources import save_uploaded_file
         from fastapi import UploadFile
+
+        from api.routers.sources import save_uploaded_file
 
         upload_file = UploadFile(filename=None, file=BytesIO(b"content"))
 

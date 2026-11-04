@@ -4,8 +4,7 @@ Additional tests for Note domain model methods.
 Covers save(), add_to_notebook(), and get_context() variations.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -19,7 +18,9 @@ class TestNoteMethods:
     @pytest.mark.asyncio
     @patch("open_notebook.domain.notebook.submit_command")
     @patch("open_notebook.domain.base.repo_create")
-    async def test_save_submits_embed_command(self, mock_repo_create, mock_submit_command):
+    async def test_save_submits_embed_command(
+        self, mock_repo_create, mock_submit_command
+    ):
         """Test Note.save() submits embed_note command when content exists."""
         note = Note(title="Test Note", content="Some content")
         note.id = None
@@ -80,8 +81,9 @@ class TestNoteMethods:
             await note.add_to_notebook("")
 
     @pytest.mark.asyncio
+    @patch("open_notebook.domain.notebook.Notebook.get", new_callable=AsyncMock)
     @patch("open_notebook.domain.base.repo_relate")
-    async def test_add_to_notebook_success(self, mock_repo_relate):
+    async def test_add_to_notebook_success(self, mock_repo_relate, mock_notebook_get):
         """Test Note.add_to_notebook() creates artifact relationship."""
         note = Note(title="Test", content="Content")
         note.id = "note:123"

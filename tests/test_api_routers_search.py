@@ -44,10 +44,14 @@ class TestSearchRouter:
     @pytest.mark.asyncio
     @patch("api.routers.search.vector_search")
     @patch("api.routers.search.model_manager")
-    async def test_search_vector_success(self, mock_model_manager, mock_vector_search, client):
+    async def test_search_vector_success(
+        self, mock_model_manager, mock_vector_search, client
+    ):
         """Test POST /api/search with vector search."""
         mock_embedding_model = MagicMock()
-        mock_model_manager.get_embedding_model = AsyncMock(return_value=mock_embedding_model)
+        mock_model_manager.get_embedding_model = AsyncMock(
+            return_value=mock_embedding_model
+        )
 
         mock_results = [
             {
@@ -151,7 +155,9 @@ class TestSearchRouter:
     @patch("api.routers.search.ask_graph")
     @patch("api.routers.search.Model")
     @patch("api.routers.search.model_manager")
-    async def test_ask_endpoint_success(self, mock_model_manager, mock_model_class, mock_ask_graph, client):
+    async def test_ask_endpoint_success(
+        self, mock_model_manager, mock_model_class, mock_ask_graph, client
+    ):
         """Test POST /api/search/ask returns streaming response."""
         mock_strategy_model = MagicMock()
         mock_strategy_model.id = "model:strategy"
@@ -160,7 +166,9 @@ class TestSearchRouter:
         mock_final_model = MagicMock()
         mock_final_model.id = "model:final"
 
-        mock_model_class.get = AsyncMock(side_effect=[mock_strategy_model, mock_answer_model, mock_final_model])
+        mock_model_class.get = AsyncMock(
+            side_effect=[mock_strategy_model, mock_answer_model, mock_final_model]
+        )
         mock_model_manager.get_embedding_model = AsyncMock(return_value=MagicMock())
 
         # Mock streaming response

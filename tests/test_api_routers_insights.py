@@ -2,6 +2,7 @@
 Tests for /api/insights router endpoints.
 """
 
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,8 +19,8 @@ class TestInsightsRouter:
         mock_insight.id = "insight:123"
         mock_insight.insight_type = "summary"
         mock_insight.content = "Summary content"
-        mock_insight.created = "2024-01-01T00:00:00"
-        mock_insight.updated = "2024-01-01T00:00:00"
+        mock_insight.created = datetime(2024, 1, 1)
+        mock_insight.updated = datetime(2024, 1, 1)
         mock_insight.get_source = AsyncMock()
 
         mock_source = MagicMock()

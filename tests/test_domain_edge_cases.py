@@ -4,15 +4,13 @@ Edge case tests for domain models to increase coverage.
 Covers error paths, validation edge cases, and boundary conditions.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from pydantic import ValidationError
 
-from open_notebook.domain.base import ObjectModel, RecordModel
-from open_notebook.domain.notebook import Notebook, Note, Source
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError, NotFoundError
+from open_notebook.domain.notebook import Note, Notebook, Source
+from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
 
 class TestObjectModelEdgeCases:
@@ -28,7 +26,9 @@ class TestObjectModelEdgeCases:
 
         # save() re-validates and wraps the validator's InvalidInputError in a
         # DatabaseOperationError (same behavior as upstream).
-        with pytest.raises(DatabaseOperationError, match="Notebook name cannot be empty"):
+        with pytest.raises(
+            DatabaseOperationError, match="Notebook name cannot be empty"
+        ):
             await notebook.save()
         mock_repo_create.assert_not_called()
 
@@ -95,7 +95,9 @@ class TestObjectModelEdgeCases:
         notebook = Notebook(name="Test", description="")
         notebook.id = None
 
-        with pytest.raises(InvalidInputError, match="Relationship and target ID must be provided"):
+        with pytest.raises(
+            InvalidInputError, match="Relationship and target ID must be provided"
+        ):
             await notebook.relate("reference", "")
 
     @pytest.mark.asyncio
@@ -153,7 +155,12 @@ class TestObjectModelEdgeCases:
         mock_repo_query.return_value = [
             {"id": "notebook:1", "name": "Valid", "description": "", "archived": False},
             {"id": "notebook:2", "invalid": "data"},  # Missing required fields
-            {"id": "notebook:3", "name": "Also Valid", "description": "", "archived": False},
+            {
+                "id": "notebook:3",
+                "name": "Also Valid",
+                "description": "",
+                "archived": False,
+            },
         ]
 
         notebooks = await Notebook.get_all()
@@ -170,15 +177,15 @@ class TestObjectModelEdgeCases:
         assert "name" in data
         assert data["name"] == "Test"
 
-    def test_prepare_save_data_includes_nullable_fields(self):
-        """Test _prepare_save_data() includes None for nullable fields."""
-        # Create a model with nullable fields
+    def test_prepare_save_data_drops_none_for_non_nullable_fields(self):
+        """Test _prepare_save_data() leaves out None values for fields that
+        aren't in nullable_fields (Source.asset isn't)."""
         source = Source(title="Test", topics=[])
-        source.asset = None  # Nullable field
+        source.asset = None
 
         data = source._prepare_save_data()
-        # asset should be included even if None (if it's in nullable_fields)
-        # This depends on Source's nullable_fields definition
+        assert "asset" not in data
+        assert data["title"] == "Test"
 
     def test_parse_datetime_string(self):
         """Test parse_datetime validator handles ISO string."""
@@ -335,4 +342,4 @@ class TestNoteEdgeCases:
         # Empty content is rejected by validator, so this test is not reachable
         # But we test that validation works
         with pytest.raises(Exception):  # InvalidInputError from validator
-            note = Note(title="Test Note", content="")
+            Note(title="Test Note", content="")

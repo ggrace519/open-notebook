@@ -13,6 +13,8 @@ import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { cn } from "@/lib/utils";
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { ContentUnavailable } from '@/components/common/ContentUnavailable'
+import { isNotFoundError } from '@/lib/utils/error-handler'
 import { GripHorizontal, GripVertical } from 'lucide-react'
 
 const MODAL_MIN_HEIGHT_PX = 600
@@ -57,7 +59,16 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
     ? (note.id.includes(':') ? note.id : `note:${note.id}`)
     : ''
 
-  const { data: fetchedNote, isLoading: noteLoading } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
+  const {
+    data: fetchedNote,
+    isLoading: noteLoading,
+    isError: noteError,
+    error: noteFetchError,
+  } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
+  // When editing, a failed fetch means we must not render the editor: the
+  // note may have been deleted (dangling chat/ask references) and offering
+  // an empty editor would invite ghost edits.
+  const noteUnavailable = isEditing && noteError
   const isSaving = isEditing ? updateNote.isPending : createNote.isPending
   const {
     handleSubmit,
@@ -266,12 +277,18 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
         } : undefined}
       >
         <DialogTitle className="sr-only">
-          {isEditing ? t.sources.editNote : t.sources.createNote}
+          {isEditing ? t('sources.editNote') : t('sources.createNote')}
         </DialogTitle>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 min-h-0 flex-col">
+        {noteUnavailable ? (
+          <ContentUnavailable
+            variant={isNotFoundError(noteFetchError) ? 'not-found' : 'error'}
+            onClose={handleClose}
+          />
+        ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 min-h-0 flex-col min-w-0">
           {isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+              <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
             </div>
           ) : (
             <>
@@ -293,8 +310,8 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   name="title"
                   value={watchTitle ?? ''}
                   onSave={(value) => setValue('title', value || '')}
-                  placeholder={t.sources.addTitle}
-                  emptyText={t.sources.untitledNote}
+                  placeholder={t('sources.addTitle')}
+                  emptyText={t('sources.untitledNote')}
                   className="text-xl font-semibold flex-1 min-w-0"
                   inputClassName="text-xl font-semibold"
                 />
@@ -317,7 +334,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                       value={field.value}
                       onChange={field.onChange}
                       height={editorHeight}
-                      placeholder={t.sources.writeNotePlaceholder}
+                      placeholder={t('sources.writeNotePlaceholder')}
                       className={cn(
                         "w-full flex-1 min-h-[200px] overflow-hidden [&_.w-md-editor]:!static [&_.w-md-editor]:!w-full [&_.w-md-editor]:!h-full [&_.w-md-editor-content]:overflow-y-auto",
                         !isEditorFullscreen && "rounded-md border"
@@ -326,7 +343,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   )}
                 />
                 {errors.content && (
-                  <p className="text-sm text-red-600 mt-1">{errors.content.message}</p>
+                  <p className="text-sm text-destructive mt-1">{errors.content.message}</p>
                 )}
               </div>
             </>
@@ -334,17 +351,17 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
 
           <div className="border-t px-6 py-4 flex justify-end gap-2 flex-shrink-0">
             <Button type="button" variant="outline" onClick={handleClose}>
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isSaving || (isEditing && noteLoading)}
             >
               {isSaving
-                ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
+                ? isEditing ? `${t('common.saving')}...` : `${t('common.creating')}...`
                 : isEditing
-                  ? t.sources.saveNote
-                  : t.sources.createNoteBtn}
+                  ? t('sources.saveNote')
+                  : t('sources.createNoteBtn')}
             </Button>
           </div>
 
@@ -362,6 +379,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
             </div>
           )}
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

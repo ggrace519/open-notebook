@@ -50,12 +50,13 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-base truncate group-hover:text-primary transition-colors">
+                <span aria-hidden className="mb-2 block h-2 w-2 rounded-[3px] bg-teal" />
+                <CardTitle className="text-base truncate">
                   {notebook.name}
                 </CardTitle>
                 {notebook.archived && (
                   <Badge variant="secondary" className="mt-1">
-                    {t.notebooks.archived}
+                    {t('notebooks.archived')}
                   </Badge>
                 )}
               </div>
@@ -76,12 +77,12 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                     {notebook.archived ? (
                       <>
                         <ArchiveRestore className="h-4 w-4 mr-2" />
-                        {t.notebooks.unarchive}
+                        {t('notebooks.unarchive')}
                       </>
                     ) : (
                       <>
                         <Archive className="h-4 w-4 mr-2" />
-                        {t.notebooks.archive}
+                        {t('notebooks.archive')}
                       </>
                     )}
                   </DropdownMenuItem>
@@ -90,10 +91,10 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       e.stopPropagation()
                       setShowDeleteDialog(true)
                     }}
-                    className="text-red-600"
+                    className="text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {t.common.delete}
+                    {t('common.delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -102,26 +103,26 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
           
           <CardContent>
             <CardDescription className="line-clamp-2 text-sm">
-              {notebook.description || t.chat.noDescription}
+              {notebook.description || t('chat.noDescription')}
             </CardDescription>
 
             <div className="mt-3 text-xs text-muted-foreground">
-              {t.common.updated.replace('{time}', formatDistanceToNow(new Date(notebook.updated), { 
+              {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { 
                 addSuffix: true,
                 locale: getDateLocale(language)
-              }))}
+              }) })}
             </div>
 
             {/* Item counts footer */}
-            <div className="mt-3 flex items-center gap-1.5 border-t pt-3">
-              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
+            <div className="mt-3 flex items-center gap-3 border-t pt-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
                 <span>{notebook.source_count}</span>
-              </Badge>
-              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
+              </span>
+              <span className="flex items-center gap-1">
                 <StickyNote className="h-3 w-3" />
                 <span>{notebook.note_count}</span>
-              </Badge>
+              </span>
             </div>
           </CardContent>
       </Card>

@@ -12,40 +12,14 @@ import pytest
 class TestCommandsRouter:
     """Test suite for /api/commands endpoints."""
 
-    @pytest.mark.asyncio
-    @patch("api.routers.commands.CommandService")
-    async def test_submit_command_job(self, mock_service, client):
-        """Test POST /api/commands/jobs submits command."""
-        mock_service.submit_command_job = AsyncMock(return_value="job:123")
-
+    def test_submit_command_job_endpoint_removed(self, client):
+        """POST /api/commands/jobs was removed upstream (unused, and it let
+        callers queue arbitrary commands). It must stay gone."""
         response = client.post(
             "/api/commands/jobs",
-            json={
-                "command": "process_text",
-                "app": "open_notebook",
-                "input": {"text": "Hello", "operation": "uppercase"},
-            },
+            json={"command": "process_text", "app": "open_notebook", "input": {}},
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["job_id"] == "job:123"
-        assert data["status"] == "submitted"
-
-    @pytest.mark.asyncio
-    @patch("api.routers.commands.CommandService")
-    async def test_submit_command_job_error(self, mock_service, client):
-        """Test POST /api/commands/jobs handles errors."""
-        mock_service.submit_command_job = AsyncMock(side_effect=Exception("Command failed"))
-
-        response = client.post(
-            "/api/commands/jobs",
-            json={
-                "command": "invalid",
-                "app": "open_notebook",
-                "input": {},
-            },
-        )
-        assert response.status_code == 500
+        assert response.status_code == 405
 
     @pytest.mark.asyncio
     @patch("api.routers.commands.CommandService")
@@ -125,6 +99,7 @@ class TestCommandService:
         # Mock import failure for commands.podcast_commands. Keep a reference to the
         # real __import__ so every other import still works.
         original_import = builtins.__import__
+
         def failing_import(name, *args, **kwargs):
             if name == "commands.podcast_commands":
                 raise ImportError("Module not found")

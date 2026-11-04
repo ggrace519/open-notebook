@@ -58,7 +58,9 @@ class TestSourceEdgeCases:
         source = Source(title="Test", topics=[])
         source.id = "source:123"
 
-        with pytest.raises(InvalidInputError, match="Insight type and content must be provided"):
+        with pytest.raises(
+            InvalidInputError, match="Insight type and content must be provided"
+        ):
             await source.add_insight("", "Content")
 
     @pytest.mark.asyncio
@@ -67,7 +69,9 @@ class TestSourceEdgeCases:
         source = Source(title="Test", topics=[])
         source.id = "source:123"
 
-        with pytest.raises(InvalidInputError, match="Insight type and content must be provided"):
+        with pytest.raises(
+            InvalidInputError, match="Insight type and content must be provided"
+        ):
             await source.add_insight("summary", "")
 
     @pytest.mark.asyncio
@@ -93,8 +97,9 @@ class TestSourceEdgeCases:
             await source.add_to_notebook("")
 
     @pytest.mark.asyncio
+    @patch("open_notebook.domain.notebook.Notebook.get", new_callable=AsyncMock)
     @patch("open_notebook.domain.base.repo_relate")
-    async def test_add_to_notebook_success(self, mock_repo_relate):
+    async def test_add_to_notebook_success(self, mock_repo_relate, mock_notebook_get):
         """Test Source.add_to_notebook() creates relationship."""
         source = Source(title="Test", topics=[])
         source.id = "source:123"
@@ -103,8 +108,12 @@ class TestSourceEdgeCases:
 
         result = await source.add_to_notebook("notebook:456")
         assert result is True
+        mock_notebook_get.assert_awaited_once_with("notebook:456")
         mock_repo_relate.assert_called_once_with(
-            source="source:123", relationship="reference", target="notebook:456", data={}
+            source="source:123",
+            relationship="reference",
+            target="notebook:456",
+            data={},
         )
 
     @pytest.mark.asyncio
