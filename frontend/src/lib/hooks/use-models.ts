@@ -38,14 +38,14 @@ export function useCreateModel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.models })
       toast({
-        title: t.common.success,
-        description: t.models.saveSuccess,
+        title: t('common.success'),
+        description: t('models.saveSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('common.error')),
         variant: 'destructive',
       })
     },
@@ -64,14 +64,14 @@ export function useDeleteModel() {
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.defaults })
       queryClient.invalidateQueries({ queryKey: ['credentials'] })
       toast({
-        title: t.common.success,
-        description: t.models.deleteSuccess,
+        title: t('common.success'),
+        description: t('models.deleteSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('common.error')),
         variant: 'destructive',
       })
     },
@@ -95,21 +95,24 @@ export function useUpdateModelDefaults() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.defaults })
       toast({
-        title: t.common.success,
-        description: t.models.saveSuccess,
+        title: t('common.success'),
+        description: t('models.saveSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('common.error')),
         variant: 'destructive',
       })
     },
   })
 }
 
-export function useProviders() {
+// Availability of providers for model creation (GET /models/providers).
+// Not to be confused with useProviders() (use-providers.ts), which returns
+// the provider registry metadata from GET /api/providers.
+export function useProviderAvailability() {
   return useQuery({
     queryKey: MODEL_QUERY_KEYS.providers,
     queryFn: () => modelsApi.getProviders(),
@@ -131,26 +134,26 @@ export function useAutoAssignDefaults() {
 
       if (assignedCount > 0) {
         toast({
-          title: t.common.success,
-          description: t.models.autoAssignSuccess.replace('{count}', assignedCount.toString()),
+          title: t('common.success'),
+          description: t('models.autoAssignSuccess', { count: assignedCount }),
         })
       } else if (missingCount > 0) {
         toast({
-          title: t.common.warning,
-          description: t.models.autoAssignNoModels,
+          title: t('common.warning'),
+          description: t('models.autoAssignNoModels'),
           variant: 'destructive',
         })
       } else {
         toast({
-          title: t.common.success,
-          description: t.models.autoAssignAlreadySet,
+          title: t('common.success'),
+          description: t('models.autoAssignAlreadySet'),
         })
       }
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('common.error')),
         variant: 'destructive',
       })
     },

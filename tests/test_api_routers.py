@@ -91,7 +91,8 @@ class TestNotebooksRouter:
         mock_notebook_class.return_value = mock_notebook
 
         response = client.post(
-            "/api/notebooks", json={"name": "New Notebook", "description": "Description"}
+            "/api/notebooks",
+            json={"name": "New Notebook", "description": "Description"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -136,7 +137,9 @@ class TestNotebooksRouter:
 
     @pytest.mark.asyncio
     @patch("api.routers.notebooks.Notebook")
-    async def test_get_notebook_delete_preview_not_found(self, mock_notebook_class, client):
+    async def test_get_notebook_delete_preview_not_found(
+        self, mock_notebook_class, client
+    ):
         """Test GET /api/notebooks/{id}/delete-preview returns 404 for missing notebook."""
         from open_notebook.exceptions import NotFoundError
 

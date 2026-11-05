@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, FileText, Link2, ChevronDown, Loader2 } from 'lucide-react'
+import { Plus, FileText, Link2, ChevronDown, Loader2, ListChecks } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
@@ -20,6 +20,7 @@ import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
+import type { SourceBulkAction } from '@/lib/utils/source-context'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -32,6 +33,7 @@ interface SourcesColumnProps {
   onRefresh?: () => void
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (sourceId: string, mode: ContextMode) => void
+  onBulkContextModeChange?: (action: SourceBulkAction) => void
   // Pagination props
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
@@ -45,6 +47,7 @@ export function SourcesColumn({
   onRefresh,
   contextSelections,
   onContextModeChange,
+  onBulkContextModeChange,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -66,8 +69,8 @@ export function SourcesColumn({
   // Collapsible column state
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleSources, t.navigation.sources),
-    [toggleSources, t.navigation.sources]
+    () => createCollapseButton(toggleSources, t('navigation.sources')),
+    [toggleSources, t('navigation.sources')]
   )
 
   // Scroll container ref for infinite scroll
@@ -151,29 +154,53 @@ export function SourcesColumn({
         isCollapsed={sourcesCollapsed}
         onToggle={toggleSources}
         collapsedIcon={FileText}
-        collapsedLabel={t.navigation.sources}
+        collapsedLabel={t('navigation.sources')}
       >
         <Card className="h-full flex flex-col flex-1 overflow-hidden">
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg">{t.navigation.sources}</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                <span aria-hidden className="h-3.5 w-[3px] rounded-full bg-sage" />
+                {t('navigation.sources')}
+              </CardTitle>
               <div className="flex items-center gap-2">
+                {onBulkContextModeChange && sources && sources.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-muted-foreground" title={t('sources.bulkContext')}>
+                        <ListChecks className="h-4 w-4" />
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onBulkContextModeChange('insights')}>
+                        {t('sources.includeAllInsights')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onBulkContextModeChange('full')}>
+                        {t('sources.includeAllFull')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onBulkContextModeChange('exclude')}>
+                        {t('sources.excludeAllFromContext')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
                 <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm">
                       <Plus className="h-4 w-4 mr-2" />
-                      {t.sources.addSource}
+                      {t('sources.addSource')}
                       <ChevronDown className="h-4 w-4 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
                       <Plus className="h-4 w-4 mr-2" />
-                      {t.sources.addSource}
+                      {t('sources.addSource')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
                       <Link2 className="h-4 w-4 mr-2" />
-                      {t.sources.addExistingTitle}
+                      {t('sources.addExistingTitle')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -190,11 +217,11 @@ export function SourcesColumn({
             ) : !sources || sources.length === 0 ? (
               <EmptyState
                 icon={FileText}
-                title={t.sources.noSourcesYet}
-                description={t.sources.createFirstSource}
+                title={t('sources.noSourcesYet')}
+                description={t('sources.createFirstSource')}
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {sources.map((source) => (
                   <SourceCard
                     key={source.id}
@@ -202,6 +229,7 @@ export function SourcesColumn({
                     onClick={handleSourceClick}
                     onDelete={handleDeleteClick}
                     onRetry={handleRetry}
+                    onRefreshContent={handleRetry}
                     onRemoveFromNotebook={handleRemoveFromNotebook}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}
@@ -240,9 +268,9 @@ export function SourcesColumn({
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title={t.sources.delete}
-        description={t.sources.deleteConfirm}
-        confirmText={t.common.delete}
+        title={t('sources.delete')}
+        description={t('sources.deleteConfirm')}
+        confirmText={t('common.delete')}
         onConfirm={handleDeleteConfirm}
         isLoading={deleteSource.isPending}
         confirmVariant="destructive"
@@ -251,9 +279,9 @@ export function SourcesColumn({
       <ConfirmDialog
         open={removeDialogOpen}
         onOpenChange={setRemoveDialogOpen}
-        title={t.sources.removeFromNotebook}
-        description={t.sources.removeConfirm}
-        confirmText={t.common.remove}
+        title={t('sources.removeFromNotebook')}
+        description={t('sources.removeConfirm')}
+        confirmText={t('common.remove')}
         onConfirm={handleRemoveConfirm}
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"

@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
 
+import apiClient from '@/lib/api/client'
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
 import { EpisodeStatus, FAILED_EPISODE_STATUSES, PodcastEpisode } from '@/lib/types/podcasts'
 import { cn } from '@/lib/utils'
@@ -33,7 +34,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { TranslationKeys } from '@/lib/locales'
+import type { TFunction } from 'i18next'
 
 interface EpisodeCardProps {
   episode: PodcastEpisode
@@ -43,40 +44,40 @@ interface EpisodeCardProps {
   retrying?: boolean
 }
 
-const getSTATUS_META = (t: TranslationKeys): Record<
+const getSTATUS_META = (t: TFunction): Record<
   EpisodeStatus | 'unknown',
   { label: string; className: string }
 > => ({
   running: {
-    label: t.podcasts.processingLabel,
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    label: t('podcasts.processingLabel'),
+    className: 'bg-warn-tint text-warn border-warn/30',
   },
   processing: {
-    label: t.podcasts.processingLabel,
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    label: t('podcasts.processingLabel'),
+    className: 'bg-warn-tint text-warn border-warn/30',
   },
   completed: {
-    label: t.podcasts.completedLabel,
-    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    label: t('podcasts.completedLabel'),
+    className: 'bg-fern-tint text-fern border-fern/30',
   },
   failed: {
-    label: t.podcasts.failedLabel,
-    className: 'bg-red-100 text-red-800 border-red-200',
+    label: t('podcasts.failedLabel'),
+    className: 'bg-destructive-tint text-destructive border-destructive/30',
   },
   error: {
-    label: t.podcasts.failedLabel,
-    className: 'bg-red-100 text-red-800 border-red-200',
+    label: t('podcasts.failedLabel'),
+    className: 'bg-destructive-tint text-destructive border-destructive/30',
   },
   pending: {
-    label: t.podcasts.pendingLabel,
-    className: 'bg-sky-100 text-sky-800 border-sky-200',
+    label: t('podcasts.pendingLabel'),
+    className: 'bg-teal-tint text-teal border-teal/30',
   },
   submitted: {
-    label: t.podcasts.pendingLabel,
-    className: 'bg-sky-100 text-sky-800 border-sky-200',
+    label: t('podcasts.pendingLabel'),
+    className: 'bg-teal-tint text-teal border-teal/30',
   },
   unknown: {
-    label: t.common.unknown,
+    label: t('common.unknown'),
     className: 'bg-muted text-muted-foreground border-transparent',
   },
 })
@@ -128,6 +129,20 @@ function extractOutlineSegments(outline: unknown): OutlineSegment[] {
   return []
 }
 
+/**
+ * "provider / name" label for a snapshot model row. Prefers the display
+ * fields the API resolves from the snapshot's model references, falls back
+ * to the legacy snapshot strings (pre-#1107 episodes), then to a dash.
+ */
+function formatModelLabel(
+  provider?: string | null,
+  name?: string | null,
+  legacyProvider?: string | null,
+  legacyName?: string | null
+): string {
+  return `${provider || legacyProvider || '—'} / ${name || legacyName || '—'}`
+}
+
 function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
   if (transcript && typeof transcript === 'object' && 'transcript' in transcript) {
     const data = transcript as TranscriptData
@@ -162,35 +177,17 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
       }
 
       try {
-        let token: string | undefined
-        if (typeof window !== 'undefined') {
-          const raw = window.localStorage.getItem('auth-storage')
-          if (raw) {
-            try {
-              const parsed = JSON.parse(raw)
-              token = parsed?.state?.token
-            } catch (error) {
-              console.error('Failed to parse auth storage', error)
-            }
-          }
-        }
+        // apiClient attaches the auth header; directAudioUrl is absolute so
+        // the dynamic baseURL is ignored.
+        const response = await apiClient.get<Blob>(directAudioUrl, {
+          responseType: 'blob',
+        })
 
-        const headers: HeadersInit = {}
-        if (token) {
-          headers.Authorization = `Bearer ${token}`
-        }
-
-        const response = await fetch(directAudioUrl, { headers })
-        if (!response.ok) {
-          throw new Error(`Audio request failed with status ${response.status}`)
-        }
-
-        const blob = await response.blob()
-        revokeUrl = URL.createObjectURL(blob)
+        revokeUrl = URL.createObjectURL(response.data)
         setAudioSrc(revokeUrl)
       } catch (error) {
         console.error('Unable to load podcast audio', error)
-        setAudioError(t.podcasts.audioUnavailable)
+        setAudioError(t('podcasts.audioUnavailable'))
         setAudioSrc(undefined)
       }
     }
@@ -212,7 +209,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
     : null
 
   const createdLabel = distance
-    ? t.podcasts.created.replace('{time}', distance)
+    ? t('podcasts.created', { time: distance })
     : null
 
   const handleDelete = () => {
@@ -228,7 +225,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
 
   return (
-    <Card className="shadow-sm">
+    <Card>
       <CardContent className="space-y-4 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -239,7 +236,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
               <StatusBadge status={episode.job_status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t.podcasts.profile}: {episode.episode_profile?.name || t.common.unknown}
+              {t('podcasts.profile')}: {episode.episode_profile?.name || t('common.unknown')}
               {createdLabel ? ` • ${createdLabel}` : ''}
             </p>
           </div>
@@ -247,56 +244,68 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <InfoIcon className="mr-2 h-4 w-4" /> {t.podcasts.details}
+                  <InfoIcon className="mr-2 h-4 w-4" /> {t('podcasts.details')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="w-[min(90vw,720px)] max-h-[85vh] overflow-hidden">
                 <DialogHeader>
                   <DialogTitle>{episode.name}</DialogTitle>
                   <DialogDescription>
-                    {episode.episode_profile?.name || t.common.unknown}
+                    {episode.episode_profile?.name || t('common.unknown')}
                     {createdLabel ? ` • ${createdLabel}` : ''}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 overflow-hidden">
                   {audioSrc ? (
-                    <audio controls preload="none" src={audioSrc} className="w-full" />
+                    <div className="rounded-md border bg-card p-2">
+                      <audio controls preload="none" src={audioSrc} className="w-full" />
+                    </div>
                   ) : audioError ? (
                     <p className="text-sm text-destructive">{audioError}</p>
                   ) : null}
 
                   <Tabs defaultValue="summary" className="h-[60vh] flex flex-col">
                     <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="summary">{t.podcasts.summaryTab}</TabsTrigger>
-                      <TabsTrigger value="outline">{t.podcasts.outlineTab}</TabsTrigger>
-                      <TabsTrigger value="transcript">{t.podcasts.transcriptTab}</TabsTrigger>
+                      <TabsTrigger value="summary">{t('podcasts.summaryTab')}</TabsTrigger>
+                      <TabsTrigger value="outline">{t('podcasts.outlineTab')}</TabsTrigger>
+                      <TabsTrigger value="transcript">{t('podcasts.transcriptTab')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="summary" className="flex-1 overflow-hidden">
                       <ScrollArea className="h-full pr-4">
                         <div className="space-y-6">
                           <section className="space-y-2">
-                            <h4 className="text-sm font-semibold text-foreground">{t.podcasts.episodeProfile}</h4>
+                            <h4 className="text-sm font-semibold text-foreground">{t('podcasts.episodeProfile')}</h4>
                             <div className="grid gap-2 text-sm md:grid-cols-2">
                               <div>
-                                <p className="text-muted-foreground">{t.podcasts.outlineModel}</p>
+                                <p className="text-muted-foreground">{t('podcasts.outlineModel')}</p>
                                 <p>
-                                  {episode.episode_profile?.outline_provider ?? '—'} /
-                                  {' '}
-                                  {episode.episode_profile?.outline_model ?? '—'}
+                                  {formatModelLabel(
+                                    episode.episode_profile?.outline_model_provider,
+                                    episode.episode_profile?.outline_model_name,
+                                    episode.episode_profile?.outline_provider,
+                                    episode.episode_profile?.outline_model
+                                  )}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">{t.podcasts.transcriptModel}</p>
+                                <p className="text-muted-foreground">{t('podcasts.transcriptModel')}</p>
                                 <p>
-                                  {episode.episode_profile?.transcript_provider ?? '—'} /
-                                  {' '}
-                                  {episode.episode_profile?.transcript_model ?? '—'}
+                                  {formatModelLabel(
+                                    episode.episode_profile?.transcript_model_provider,
+                                    episode.episode_profile?.transcript_model_name,
+                                    episode.episode_profile?.transcript_provider,
+                                    episode.episode_profile?.transcript_model
+                                  )}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">{t.podcasts.segments}</p>
+                                <p className="text-muted-foreground">{t('podcasts.segments')}</p>
                                 <p>{episode.episode_profile?.num_segments ?? '—'}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">{t('podcasts.maxTokens')}</p>
+                                <p>{episode.episode_profile?.max_tokens ?? '—'}</p>
                               </div>
                             </div>
                             {episode.episode_profile?.default_briefing ? (
@@ -307,10 +316,14 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                           </section>
 
                           <section className="space-y-2">
-                            <h4 className="text-sm font-semibold text-foreground">{t.podcasts.speakerProfile}</h4>
+                            <h4 className="text-sm font-semibold text-foreground">{t('podcasts.speakerProfile')}</h4>
                             <p className="text-xs text-muted-foreground">
-                              {episode.speaker_profile?.tts_provider ?? '—'} /{' '}
-                              {episode.speaker_profile?.tts_model ?? '—'}
+                              {formatModelLabel(
+                                episode.speaker_profile?.voice_model_provider,
+                                episode.speaker_profile?.voice_model_name,
+                                episode.speaker_profile?.tts_provider,
+                                episode.speaker_profile?.tts_model
+                              )}
                             </p>
                             {episode.speaker_profile?.speakers?.map((speaker, index) => (
                               <div
@@ -318,12 +331,12 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                                 className="rounded-md border bg-muted/20 p-3 text-xs"
                               >
                                 <p className="font-semibold text-foreground">{speaker.name}</p>
-                                <p className="text-muted-foreground">{t.podcasts.voiceId}: {speaker.voice_id}</p>
+                                <p className="text-muted-foreground">{t('podcasts.voiceId')}: {speaker.voice_id}</p>
                                 <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
-                                  <span className="font-semibold">{t.podcasts.backstory}:</span> {speaker.backstory}
+                                  <span className="font-semibold">{t('podcasts.backstory')}:</span> {speaker.backstory}
                                 </p>
                                 <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
-                                  <span className="font-semibold">{t.podcasts.personality}:</span> {speaker.personality}
+                                  <span className="font-semibold">{t('podcasts.personality')}:</span> {speaker.personality}
                                 </p>
                               </div>
                             ))}
@@ -331,7 +344,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
 
                           {episode.briefing ? (
                             <section className="space-y-2">
-                              <h4 className="text-sm font-semibold text-foreground">{t.podcasts.briefing}</h4>
+                              <h4 className="text-sm font-semibold text-foreground">{t('podcasts.briefing')}</h4>
                               <div className="rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
                                 {episode.briefing}
                               </div>
@@ -348,17 +361,17 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                             {outlineSegments.map((segment, index) => (
                               <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
                                 <div className="flex items-center justify-between gap-2">
-                                  <p className="font-semibold text-foreground">{segment.name ?? `${t.podcasts.segment} ${index + 1}`}</p>
+                                  <p className="font-semibold text-foreground">{segment.name ?? `${t('podcasts.segment')} ${index + 1}`}</p>
                                   {segment.size ? (
                                     <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{segment.size}</Badge>
                                   ) : null}
                                 </div>
-                                <p className="text-muted-foreground whitespace-pre-wrap">{segment.description ?? t.podcasts.noDescription}</p>
+                                <p className="text-muted-foreground whitespace-pre-wrap">{segment.description ?? t('podcasts.noDescription')}</p>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-xs text-muted-foreground">{t.podcasts.noOutline}</p>
+                          <p className="text-xs text-muted-foreground">{t('podcasts.noOutline')}</p>
                         )}
                       </ScrollArea>
                     </TabsContent>
@@ -368,12 +381,12 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                         {transcriptEntries.length > 0 ? (
                           transcriptEntries.map((entry, index) => (
                             <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
-                              <p className="font-semibold text-foreground">{entry.speaker ?? t.podcasts.speaker}</p>
+                              <p className="font-semibold text-foreground">{entry.speaker ?? t('podcasts.speaker')}</p>
                               <p className="text-muted-foreground whitespace-pre-wrap">{entry.dialogue ?? ''}</p>
                             </div>
                           ))
                         ) : (
-                          <p className="text-xs text-muted-foreground">{t.podcasts.noTranscript}</p>
+                          <p className="text-xs text-muted-foreground">{t('podcasts.noTranscript')}</p>
                         )}
                       </ScrollArea>
                     </TabsContent>
@@ -389,27 +402,27 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 disabled={retrying}
               >
                 <RefreshCcw className={cn('mr-2 h-4 w-4', retrying && 'animate-spin')} />
-                {retrying ? t.podcasts.retrying : t.podcasts.retry}
+                {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
               </Button>
             ) : null}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-destructive">
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {t.podcasts.delete}
+                  {t('podcasts.delete')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t.podcasts.deleteEpisodeTitle}</AlertDialogTitle>
+                  <AlertDialogTitle>{t('podcasts.deleteEpisodeTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t.podcasts.deleteEpisodeDesc.replace('{name}', episode.name)}
+                    {t('podcasts.deleteEpisodeDesc', { name: episode.name })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                    {deleting ? t.podcasts.deleting : t.podcasts.delete}
+                    {deleting ? t('podcasts.deleting') : t('podcasts.delete')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -418,15 +431,17 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
         </div>
 
         {audioSrc ? (
-          <audio controls preload="none" src={audioSrc} className="w-full" />
+          <div className="rounded-md border bg-card p-2">
+            <audio controls preload="none" src={audioSrc} className="w-full" />
+          </div>
         ) : audioError ? (
           <p className="text-sm text-destructive">{audioError}</p>
         ) : null}
 
         {isFailed && episode.error_message ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
-            <p className="text-xs font-medium text-red-800 dark:text-red-300">{t.podcasts.errorDetails}</p>
-            <p className="mt-1 text-xs whitespace-pre-wrap text-red-700 dark:text-red-400">{episode.error_message}</p>
+          <div className="rounded-md border border-destructive/30 bg-destructive-tint p-3">
+            <p className="text-xs font-medium text-destructive">{t('podcasts.errorDetails')}</p>
+            <p className="mt-1 text-xs whitespace-pre-wrap text-destructive">{episode.error_message}</p>
           </div>
         ) : null}
       </CardContent>
